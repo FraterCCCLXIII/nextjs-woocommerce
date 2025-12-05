@@ -13,7 +13,7 @@ import { FETCH_ALL_CATEGORIES_QUERY } from '@/utils/gql/GQL_QUERIES';
 const Kategorier: NextPage = ({
   categories,
 }: InferGetStaticPropsType<typeof getStaticProps>) => (
-  <Layout title="Kategorier">
+  <Layout title="Categories">
     {categories && <Categories categories={categories} />}
   </Layout>
 );

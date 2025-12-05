@@ -6,7 +6,7 @@ import CartContents from '@/components/Cart/CartContents.component';
 import type { NextPage } from 'next';
 
 const Handlekurv: NextPage = () => (
-  <Layout title="Handlekurv">
+  <Layout title="Cart">
     <CartContents />
   </Layout>
 );

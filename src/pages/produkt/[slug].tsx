@@ -34,11 +34,11 @@ const Produkt: NextPage = ({
       {product ? (
         <SingleProduct product={product} />
       ) : (
-        <div className="mt-8 text-2xl text-center">Laster produkt ...</div>
+        <div className="mt-8 text-2xl text-center">Loading product ...</div>
       )}
       {hasError && (
         <div className="mt-8 text-2xl text-center">
-          Feil under lasting av produkt ...
+          Error loading product ...
         </div>
       )}
     </Layout>

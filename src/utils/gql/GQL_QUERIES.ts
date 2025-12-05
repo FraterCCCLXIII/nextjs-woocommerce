@@ -437,3 +437,16 @@ export const GET_ALL_POST_SLUGS = gql`
     }
   }
 `;
+
+export const GET_AVAILABLE_PAYMENT_GATEWAYS = gql`
+  query GetAvailablePaymentGateways {
+    paymentGateways {
+      nodes {
+        id
+        title
+        description
+        enabled
+      }
+    }
+  }
+`;

@@ -259,6 +259,47 @@
   display: none;
 }
 
+/* WooCommerce My Account Navigation Styles */
+.woocommerce-MyAccount-navigation {
+  @apply mb-6 lg:mb-0;
+}
+
+.woocommerce-MyAccount-navigation ul {
+  @apply list-none p-0 m-0;
+}
+
+.woocommerce-MyAccount-navigation-link {
+  @apply mb-1;
+}
+
+.woocommerce-MyAccount-navigation-link.is-active a {
+  @apply bg-gray-900 text-white;
+}
+
+.woocommerce-MyAccount-content {
+  @apply w-full;
+}
+
+/* Mobile: Stack navigation above content */
+@media (max-width: 1023px) {
+  .woocommerce-MyAccount-navigation {
+    @apply mb-8;
+  }
+  
+  .woocommerce-MyAccount-navigation ul {
+    @apply flex flex-wrap gap-2;
+  }
+  
+  .woocommerce-MyAccount-navigation-link {
+    @apply flex-1 min-w-[140px];
+  }
+  
+  .woocommerce-MyAccount-navigation-link a,
+  .woocommerce-MyAccount-navigation-link button {
+    @apply text-center;
+  }
+}
+
 .ais-SearchBox-reset {
   margin-left: 10px;
 }
