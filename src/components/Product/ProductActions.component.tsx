@@ -148,7 +148,8 @@ export default function ProductActions({ product }: ProductActionsProps) {
   }, [product, selectedVariationData]);
 
   const hasVariations = product.variations && product.variations.nodes && product.variations.nodes.length > 0;
-  const hasMultipleVariations = hasVariations && product.variations.nodes!.length > 1;
+  const variationsNodes = product.variations?.nodes;
+  const hasMultipleVariations = hasVariations && variationsNodes && variationsNodes.length > 1;
 
   return (
     <div className="flex flex-col gap-y-6">
