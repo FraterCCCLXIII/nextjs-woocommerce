@@ -41,11 +41,22 @@ const CartInitializer = () => {
     if (error) {
       console.error('[CartInitializer] Error fetching cart:', error);
       if (error.networkError) {
-        console.error('[CartInitializer] Network error details:', {
-          message: error.networkError.message,
-          statusCode: error.networkError.statusCode,
-          result: error.networkError.result,
-        });
+        const networkError = error.networkError;
+        const errorDetails: Record<string, unknown> = {
+          message: networkError.message,
+        };
+        
+        // Only include statusCode if it exists (ServerParseError or ServerError)
+        if ('statusCode' in networkError) {
+          errorDetails.statusCode = (networkError as { statusCode: number }).statusCode;
+        }
+        
+        // Only include result if it exists
+        if ('result' in networkError) {
+          errorDetails.result = (networkError as { result: unknown }).result;
+        }
+        
+        console.error('[CartInitializer] Network error details:', errorDetails);
       }
     }
   }, [error]);
