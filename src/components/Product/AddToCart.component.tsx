@@ -45,7 +45,7 @@ export interface IVariationNodes {
   id?: string;
   databaseId: number;
   name: string;
-  price?: string;
+  price: string;
   stockStatus: string;
   stockQuantity: number;
   purchasable: boolean;
