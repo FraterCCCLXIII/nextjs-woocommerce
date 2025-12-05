@@ -56,16 +56,16 @@ const SingleProduct = ({ product }: IProductRootObject) => {
   return (
     <>
       <div
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col small:flex-row small:items-start py-6 relative gap-6 small:gap-8"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-start py-6 relative gap-6 md:gap-8"
         data-testid="product-container"
       >
         {/* Image Gallery */}
-        <div className="block w-full small:flex-1 relative">
+        <div className="block w-full md:flex-1 relative">
           <ImageGallery images={images} />
         </div>
 
         {/* Product Info and Actions */}
-        <div className="flex flex-col small:sticky small:top-48 small:py-0 max-w-[600px] w-full py-8 gap-y-6">
+        <div className="flex flex-col md:sticky md:top-48 md:py-0 max-w-[600px] w-full py-8 gap-y-6">
           {/* Product Info (Title & Description) - Above Price */}
           <ProductInfo product={product} />
 

@@ -19,6 +19,11 @@ const nextConfig = {
         hostname: 'via.placeholder.com',
         pathname: '**',
       },
+      {
+        protocol: 'https',
+        hostname: 'store.moleculepeptides.com',
+        pathname: '**',
+      },
     ],
   },
 };
