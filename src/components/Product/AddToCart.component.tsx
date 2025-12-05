@@ -54,8 +54,8 @@ export interface IVariationNodes {
 }
 
 interface IVariations {
-  __typename: string;
-  nodes: IVariationNodes[];
+  __typename?: string;
+  nodes?: IVariationNodes[];
 }
 
 export interface IProduct {
