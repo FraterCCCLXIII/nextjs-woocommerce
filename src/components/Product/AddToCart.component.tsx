@@ -59,14 +59,14 @@ interface IVariations {
 }
 
 export interface IProduct {
-  __typename: string;
-  id: string;
+  __typename?: string;
+  id?: string;
   databaseId: number;
-  averageRating: number;
-  slug: string;
-  description: string;
+  averageRating?: number;
+  slug?: string;
+  description?: string;
   onSale: boolean;
-  image: IImage;
+  image?: IImage;
   name: string;
   salePrice?: string;
   regularPrice: string;
