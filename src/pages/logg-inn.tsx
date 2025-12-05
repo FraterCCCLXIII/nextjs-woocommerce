@@ -1,16 +1,19 @@
-import Layout from '@/components/Layout/Layout.component';
-import UserLogin from '@/components/User/UserLogin.component';
-
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import type { NextPage } from 'next';
 
-const LoginPage: NextPage = () => {
-  return (
-    <Layout title="Log in">
-      <div className="container mx-auto px-4 py-8">
-        <UserLogin />
-      </div>
-    </Layout>
-  );
+/**
+ * Redirect from Norwegian slug /logg-inn to English /login
+ * Maintains backward compatibility for old links
+ */
+const LoggInn: NextPage = () => {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/login');
+  }, [router]);
+
+  return null;
 };
 
-export default LoginPage;
+export default LoggInn;

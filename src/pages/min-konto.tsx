@@ -1,17 +1,19 @@
-import Layout from '@/components/Layout/Layout.component';
-import CustomerAccount from '@/components/User/CustomerAccount.component';
-import withAuth from '@/components/User/withAuth.component';
-
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import type { NextPage } from 'next';
 
-const CustomerAccountPage: NextPage = () => {
-  return (
-    <Layout title="Min konto">
-      <div className="container mx-auto px-4 py-8">
-        <CustomerAccount />
-      </div>
-    </Layout>
-  );
+/**
+ * Redirect from Norwegian slug /min-konto to English /account
+ * Maintains backward compatibility for old links
+ */
+const MinKonto: NextPage = () => {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/account');
+  }, [router]);
+
+  return null;
 };
 
-export default withAuth(CustomerAccountPage);
+export default MinKonto;

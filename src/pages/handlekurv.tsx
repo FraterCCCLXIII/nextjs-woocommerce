@@ -1,14 +1,19 @@
-// Components
-import Layout from '@/components/Layout/Layout.component';
-import CartContents from '@/components/Cart/CartContents.component';
-
-// Types
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import type { NextPage } from 'next';
 
-const Handlekurv: NextPage = () => (
-  <Layout title="Cart">
-    <CartContents />
-  </Layout>
-);
+/**
+ * Redirect from Norwegian slug /handlekurv to English /cart
+ * Maintains backward compatibility for old links
+ */
+const Handlekurv: NextPage = () => {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/cart');
+  }, [router]);
+
+  return null;
+};
 
 export default Handlekurv;

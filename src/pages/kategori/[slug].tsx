@@ -1,46 +1,29 @@
-import { withRouter } from 'next/router';
-
-// Components
-import Layout from '@/components/Layout/Layout.component';
-import DisplayProducts from '@/components/Product/DisplayProducts.component';
-
-import client from '@/utils/apollo/ApolloClient';
-
-import { GET_PRODUCTS_FROM_CATEGORY } from '@/utils/gql/GQL_QUERIES';
-import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
+import { GetServerSideProps } from 'next';
 
 /**
- * Display a single product with dynamic pretty urls
+ * Redirect from Norwegian slug /kategori/[slug] to English /category/[slug]
+ * Maintains backward compatibility for old links
  */
-const Produkt = ({
-  categoryName,
-  products,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) => {
-  return (
-    <Layout title={`${categoryName ? categoryName : ''}`}>
-      {products ? (
-        <DisplayProducts products={products} />
-      ) : (
-        <div className="mt-8 text-2xl text-center">Laster produkt ...</div>
-      )}
-    </Layout>
-  );
-};
-
-export default withRouter(Produkt);
-
 export const getServerSideProps: GetServerSideProps = async ({
-  query: { id },
+  params,
+  query,
+  res,
 }) => {
-  const res = await client.query({
-    query: GET_PRODUCTS_FROM_CATEGORY,
-    variables: { id },
-  });
-
-  return {
-    props: {
-      categoryName: res.data.productCategory.name,
-      products: res.data.productCategory.products.nodes,
-    },
-  };
+  const slug = params?.slug;
+  const id = query.id;
+  
+  if (slug) {
+    // If there's an ID query param, include it in the redirect
+    const redirectUrl = id ? `/category/${slug}?id=${id}` : `/category/${slug}`;
+    res.setHeader('Location', redirectUrl);
+    res.statusCode = 301;
+    res.end();
+  }
+  
+  return { props: {} };
 };
+
+// This component will never render due to the redirect
+export default function KategoriRedirect() {
+  return null;
+}
