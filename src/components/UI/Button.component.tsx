@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 
-type TButtonVariant = 'primary' | 'secondary' | 'hero' | 'filter' | 'reset';
+type TButtonVariant = 'primary' | 'secondary' | 'hero' | 'filter' | 'reset' | 'danger';
 
 interface IButtonProps {
   handleButtonClick?: () => void;
@@ -12,6 +12,7 @@ interface IButtonProps {
   href?: string;
   title?: string;
   selected?: boolean;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 /**
@@ -34,21 +35,24 @@ const Button = ({
   href,
   title,
   selected = false,
+  type = 'button',
 }: IButtonProps) => {
   const getVariantClasses = (variant: TButtonVariant = 'primary') => {
     switch (variant) {
       case 'hero':
-        return 'inline-block px-8 py-4 text-sm tracking-wider uppercase bg-white text-gray-900 hover:bg-gray-400 hover:text-white hover:shadow-md';
+        return 'inline-block px-8 py-4 text-sm tracking-wider uppercase bg-white text-gray-900 hover:bg-gray-400 hover:text-white hover:shadow-md rounded-full';
       case 'filter':
         return selected 
-          ? 'px-3 py-1 border rounded bg-gray-900 text-white'
-          : 'px-3 py-1 border rounded hover:bg-gray-100 bg-white text-gray-900';
+          ? 'px-3 py-1 border rounded-full bg-gray-900 text-white'
+          : 'px-3 py-1 border rounded-full hover:bg-gray-100 bg-white text-gray-900';
       case 'reset':
-        return 'w-full mt-8 py-2 px-4 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors';
+        return 'w-full mt-8 py-2 px-4 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors';
       case 'secondary':
-        return 'px-2 lg:px-4 py-2 font-bold border border-gray-400 border-solid rounded text-white bg-red-500 hover:bg-red-600';
-      default: // primary
-        return 'px-2 lg:px-4 py-2 font-bold border border-gray-400 border-solid rounded text-white bg-blue-500 hover:bg-blue-600';
+        return 'px-2 lg:px-4 py-2 font-semibold border border-gray-400 border-solid rounded-full text-white bg-gray-200 text-gray-900 hover:bg-gray-300';
+      case 'danger':
+        return 'px-2 lg:px-4 py-2 font-semibold border border-red-500 border-solid rounded-full text-white bg-red-500 hover:bg-red-600 transition-colors';
+      default: // primary - matches Medusa product page button style
+        return 'w-full h-10 px-4 py-2 font-semibold rounded-full bg-black text-white hover:bg-gray-800 transition-colors';
     }
   };
 
@@ -66,6 +70,7 @@ const Button = ({
 
   return (
     <button
+      type={type}
       onClick={handleButtonClick}
       disabled={buttonDisabled}
       className={classes}

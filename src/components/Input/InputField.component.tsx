@@ -14,6 +14,8 @@ export interface IInputRootObject {
   errors?: IErrors;
   register?: UseFormRegister<FieldValues>;
   type?: string;
+  className?: string;
+  showLabel?: boolean;
 }
 
 /**
@@ -32,22 +34,44 @@ export const InputField = ({
   inputLabel,
   inputName,
   type,
+  className = '',
+  showLabel = false,
 }: IInputRootObject) => {
-  const { register } = useFormContext();
+  const { register, formState: { errors } } = useFormContext();
+
+  // Convert HTML attributes to React props
+  const reactProps: any = {};
+  if (customValidation) {
+    Object.keys(customValidation).forEach((key) => {
+      // Convert minlength to minLength for React
+      if (key === 'minlength') {
+        reactProps.minLength = customValidation.minlength;
+      } else {
+        reactProps[key] = customValidation[key as keyof typeof customValidation];
+      }
+    });
+  }
+
+  const fieldError = errors[inputName];
 
   return (
-    <div className="w-1/2 p-2">
-      <label htmlFor={inputName} className="pb-4">
-        {inputLabel}
-      </label>
+    <div className={`${className || 'flex-1'}`}>
+      {showLabel && (
+        <label htmlFor={inputName} className="block text-sm text-gray-600 mb-1">
+          {inputLabel}
+        </label>
+      )}
       <input
-        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-black focus:border-black block w-full px-3 py-2 placeholder-gray-400"
         id={inputName}
         placeholder={inputLabel}
         type={type ?? 'text'}
-        {...customValidation}
+        {...reactProps}
         {...register(inputName)}
       />
+      {fieldError && (
+        <p className="text-red-600 text-xs mt-1">{fieldError.message as string}</p>
+      )}
     </div>
   );
 };

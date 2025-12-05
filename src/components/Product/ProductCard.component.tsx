@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
 import { paddedPrice } from '@/utils/functions/functions';
 
 interface ProductCardProps {
@@ -25,16 +26,21 @@ const ProductCard = ({
   slug,
   image,
 }: ProductCardProps) => {
+  const [imageError, setImageError] = useState(false);
+  
   // Add padding/empty character after currency symbol
   const formattedPrice = price ? paddedPrice(price, 'kr') : price;
   const formattedRegularPrice = regularPrice ? paddedPrice(regularPrice, 'kr') : regularPrice;
   const formattedSalePrice = salePrice ? paddedPrice(salePrice, 'kr') : salePrice;
 
+  const hasImage = image?.sourceUrl && !imageError;
+  const isLocalhost = image?.sourceUrl?.includes('localhost') || image?.sourceUrl?.includes('127.0.0.1');
+
   return (
     <div className="group">
       <div className="aspect-[3/4] overflow-hidden bg-gray-100 relative">
-        <Link href={`/produkt/${slug}`}>
-          {image?.sourceUrl ? (
+        <Link href={`/product/${slug}`}>
+          {hasImage ? (
             <Image
               src={image.sourceUrl}
               alt={name}
@@ -42,6 +48,8 @@ const ProductCard = ({
               className="w-full h-full object-cover object-center transition duration-300 group-hover:scale-105"
               priority={databaseId === 1}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              onError={() => setImageError(true)}
+              unoptimized={isLocalhost}
             />
           ) : (
             <div className="h-full w-full bg-gray-100 flex items-center justify-center">
@@ -51,7 +59,7 @@ const ProductCard = ({
         </Link>
       </div>
 
-      <Link href={`/produkt/${slug}`}>
+      <Link href={`/product/${slug}`}>
         <div className="mt-4">
           <p className="text-xl font-bold text-center cursor-pointer hover:text-gray-600 transition-colors">
             {name}

@@ -1,36 +1,43 @@
-import Image from 'next/image';
-import Button from '../UI/Button.component';
+import Link from 'next/link';
+import StarIcon from '../UI/icons/StarIcon.component';
 
 /**
- * Renders Hero section for Index page
+ * Renders Hero section for Index page matching Medusa design
  * @function Hero
  * @returns {JSX.Element} - Rendered component
  */
 const Hero = () => (
-  <section className="relative w-full h-[60vh] overflow-hidden">
-    <div className="absolute inset-0">
-      <Image
-        src="/images/hero.jpg"
-        alt="Hero image"
-        fill
-        priority
-        className="object-cover object-center"
-        quality={90}
-      />
-      <div className="absolute inset-0 bg-black bg-opacity-30" />
-    </div>
-    
-    <div className="relative h-full container mx-auto flex items-center p-4 md:p-0">
-      <div className="max-w-xl">
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-light text-white mb-6">
-          Stripete Zig Zag Pute Sett
+  <section className="w-full relative bg-white py-16 md:py-24">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="text-left">
+        {/* Star Rating & Verified Text Pill */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full mb-6">
+          <div className="flex items-center gap-1">
+            <StarIcon className="w-3 h-3" />
+            <StarIcon className="w-3 h-3" />
+            <StarIcon className="w-3 h-3" />
+            <StarIcon className="w-3 h-3" />
+            <StarIcon className="w-3 h-3" />
+          </div>
+          <span className="text-sm text-gray-600 font-space-mono" style={{ fontFamily: "var(--font-space-mono), monospace" }}>
+            Verified Purity & US Shipping
+          </span>
+        </div>
+
+        {/* Main Heading */}
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-8 max-w-4xl leading-tight">
+          Research-grade Peptides for Advanced Protocols
         </h1>
-        <Button 
-          href="/produkter"
-          variant="hero"
-        >
-          Se Utvalget
-        </Button>
+
+        {/* CTA Button */}
+        <div className="mt-8">
+          <Link
+            href="/catalog"
+            className="inline-block px-8 py-4 bg-black text-white text-lg font-semibold rounded-full hover:bg-gray-800 transition-colors"
+          >
+            Shop Peptides
+          </Link>
+        </div>
       </div>
     </div>
   </section>

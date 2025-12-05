@@ -1,97 +1,144 @@
+"use client";
+
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { hasCredentials } from '../../utils/auth';
-import Cart from './Cart.component';
-import AlgoliaSearchBox from '../AlgoliaSearch/AlgoliaSearchBox.component';
-import MobileSearch from '../AlgoliaSearch/MobileSearch.component';
+import { useQuery } from '@apollo/client';
+import MobileMenu from './MobileMenu.component';
+import NavDropdown from './NavDropdown.component';
+import SearchTrigger from './SearchTrigger.component';
+import Logo from '@/components/UI/Logo.component';
+import AccountIcon from '@/components/UI/icons/AccountIcon.component';
+import CartIcon from '@/components/UI/icons/CartIcon.component';
+import { useCartStore } from '@/stores/cartStore';
+import { GET_CURRENT_USER } from '@/utils/gql/GQL_QUERIES';
+import styles from './nav.module.css';
+
+type NavItemLink = {
+  name: string;
+  href: string;
+  type?: never;
+  items?: never;
+};
+
+type NavItemDropdown = {
+  name: string;
+  type: "dropdown";
+  items: Array<{ name: string; href: string }>;
+  href?: never;
+};
+
+type NavItem = NavItemLink | NavItemDropdown;
+
+const mainNavItems: NavItem[] = [
+  { name: "Home", href: "/" },
+  { name: "About Us", href: "/pages/about-us" },
+  { name: "Catalog", href: "/catalog" },
+  {
+    name: "Resources",
+    type: "dropdown",
+    items: [
+      { name: "Peptide Calculator", href: "/calculator" },
+      { name: "Peptide Guide", href: "/pages/peptide-guide" },
+      { name: "Research", href: "/research" },
+    ],
+  },
+  { name: "Contact Us", href: "/pages/contact" },
+];
+
 
 /**
  * Navigation for the application.
- * Includes mobile menu.
+ * Includes mobile menu and desktop navigation matching Medusa theme.
  */
 const Navbar = () => {
-  const [loggedIn, setLoggedIn] = useState(false);
+  const cart = useCartStore((state) => state.cart);
+  const cartCount = cart?.totalProductsCount || 0;
 
-  useEffect(() => {
-    setLoggedIn(hasCredentials());
-  }, []);
+  // Check if user is authenticated
+  // Use network-only to ensure we always check current authentication status
+  // This prevents showing stale cached data after logout
+  const { data, loading, error } = useQuery(GET_CURRENT_USER, {
+    errorPolicy: 'all',
+    fetchPolicy: 'network-only', // Always check server for current auth status
+  });
+
+  // Only consider logged in if we have customer data and no error
+  // If loading or error, default to not logged in (show login link)
+  const loggedIn = !loading && !error && !!data?.customer;
 
   return (
-    <header className="border-b border-gray-200">
-      <nav id="header" className="top-0 z-50 w-full bg-white">
-        <div className="container mx-auto px-4 sm:px-6 py-4">
-          <div className="flex flex-col space-y-4 md:hidden">
-            <div className="text-center">
-              <Link href="/">
-                <span className="text-lg font-bold tracking-widest text-gray-900">
-                  NETTBUTIKK
-                </span>
-              </Link>
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-[20px] border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Grid layout: main-nav | logo | secondary-nav on mobile/tablet, logo | main-nav | secondary-nav on desktop */}
+        <div className={styles.headerGrid}>
+          {/* Main Navigation */}
+          <div className={`${styles.mainNav} flex items-center gap-4`}>
+            {/* Mobile Menu Button */}
+            <div className="lg:hidden">
+              <MobileMenu />
             </div>
-            <div className="w-full">
-              <MobileSearch />
-            </div>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden lg:flex items-center justify-center w-full" role="navigation">
+              <ul className="flex items-center gap-6" role="list">
+                {mainNavItems.map((item) => (
+                  <li key={item.name}>
+                    {item.type === "dropdown" ? (
+                      <NavDropdown label={item.name} items={item.items} />
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className="text-sm hover:text-gray-900 transition-colors font-space-mono"
+                        style={{ fontFamily: "var(--font-space-mono), monospace" }}
+                      >
+                        {item.name}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
           </div>
-          <div className="hidden md:flex items-center justify-between">
-            <div className="flex items-center space-x-8">
-              <Link href="/produkter">
-                <span className="text-base uppercase tracking-wider group relative">
-                  <span className="relative inline-block">
-                    <span className="absolute -bottom-1 left-0 w-0 h-px bg-gray-900 group-hover:w-full transition-all duration-500"></span>
-                    Produkter
-                  </span>
-                </span>
-              </Link>
-              <Link href="/kategorier">
-                <span className="text-base uppercase tracking-wider group relative">
-                  <span className="relative inline-block">
-                    <span className="absolute -bottom-1 left-0 w-0 h-px bg-gray-900 group-hover:w-full transition-all duration-500"></span>
-                    Kategorier
-                  </span>
-                </span>
-              </Link>
-            </div>
-            <Link href="/" className="hidden lg:block">
-              <span className="text-xl font-bold tracking-widest text-gray-900 hover:text-gray-700 transition-colors">
-                NETTBUTIKK
-              </span>
+
+          {/* Logo */}
+          <div className={`${styles.logo} flex items-center justify-start`}>
+            <Link href="/" className="flex items-center">
+              <span className="sr-only">Molecule</span>
+              <Logo className="h-6 w-auto" />
             </Link>
-            <div className="flex items-center space-x-3">
-              <AlgoliaSearchBox />
-              {loggedIn ? (
-                <Link href="/min-konto">
-                  <span className="text-base uppercase tracking-wider group relative">
-                    <span className="relative inline-block">
-                      <span className="absolute -bottom-1 left-0 w-0 h-px bg-gray-900 group-hover:w-full transition-all duration-500"></span>
-                      Min konto
-                    </span>
-                  </span>
-                </Link>
-              ) : (
-                <>
-                  <Link href="/logg-inn">
-                    <span className="text-base uppercase tracking-wider group relative">
-                      <span className="relative inline-block">
-                        <span className="absolute -bottom-1 left-0 w-0 h-px bg-gray-900 group-hover:w-full transition-all duration-500"></span>
-                        Logg inn
-                      </span>
-                    </span>
-                  </Link>
-                  <Link href="/registrer">
-                    <span className="text-base uppercase tracking-wider group relative">
-                      <span className="relative inline-block">
-                        <span className="absolute -bottom-1 left-0 w-0 h-px bg-gray-900 group-hover:w-full transition-all duration-500"></span>
-                        Registrer
-                      </span>
-                    </span>
-                  </Link>
-                </>
+          </div>
+
+          {/* Secondary Navigation */}
+          <div className={`${styles.secondaryNav} flex items-center justify-end gap-4`}>
+            {/* Search - Always visible */}
+            <SearchTrigger />
+
+            {/* Account - Always visible */}
+            <Link
+              href={loggedIn ? "/account" : "/login"}
+              className="p-2 hover:text-gray-900 transition-colors"
+              aria-label={loggedIn ? "Account" : "Login"}
+            >
+              <span className="sr-only">{loggedIn ? "Account" : "Login"}</span>
+              <AccountIcon />
+            </Link>
+
+            {/* Cart - Always visible */}
+            <Link
+              href="/cart"
+              className="relative p-2 hover:text-gray-900 transition-colors"
+              aria-label="Cart"
+            >
+              <span className="sr-only">Cart</span>
+              <CartIcon />
+              {cartCount > 0 && (
+                <div className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {cartCount}
+                </div>
               )}
-              <Cart />
-            </div>
+            </Link>
           </div>
         </div>
-      </nav>
+      </div>
     </header>
   );
 };

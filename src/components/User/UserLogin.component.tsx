@@ -5,6 +5,7 @@ import { InputField } from '../Input/InputField.component';
 import LoadingSpinner from '../LoadingSpinner/LoadingSpinner.component';
 import Button from '../UI/Button.component';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 
 interface ILoginData {
   username: string;
@@ -28,7 +29,7 @@ const UserLogin = () => {
     try {
       const result = await login(data.username, data.password);
       if (result.success && result.status === 'SUCCESS') {
-        router.push('/min-konto');
+        router.push('/account');
       } else {
         throw new Error('Failed to login');
       }
@@ -46,38 +47,62 @@ const UserLogin = () => {
 
   return (
     <section className="text-gray-700 container p-4 py-2 mx-auto mb-[8rem] md:mb-0">
-      <FormProvider {...methods}>
-        <form onSubmit={methods.handleSubmit(onSubmit)}>
-          <div className="mx-auto lg:w-1/2 flex flex-wrap">
-            <InputField
-              inputName="username"
-              inputLabel="Brukernavn eller e-post"
-              type="text"
-              customValidation={{ required: true }}
-            />
-            <InputField
-              inputName="password"
-              inputLabel="Passord"
-              type="password"
-              customValidation={{ required: true }}
-            />
-
-            {error && (
-              <div className="w-full p-2 text-red-600 text-sm text-center">
-                {error}
+      <div className="mx-auto lg:w-1/2">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+          Log In
+        </h1>
+        <FormProvider {...methods}>
+          <form onSubmit={methods.handleSubmit(onSubmit)}>
+            <div className="flex flex-col gap-4">
+              <div className="w-full">
+                <label htmlFor="username" className="block pb-2 text-sm font-medium text-gray-700">
+                  Username or email
+                </label>
+                <input
+                  className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-2 focus:ring-black focus:border-black block w-full p-2.5 placeholder-gray-400"
+                  id="username"
+                  placeholder="Username or email"
+                  type="text"
+                  {...methods.register('username', { required: true })}
+                />
               </div>
-            )}
+              <div className="w-full">
+                <label htmlFor="password" className="block pb-2 text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <input
+                  className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-2 focus:ring-black focus:border-black block w-full p-2.5 placeholder-gray-400"
+                  id="password"
+                  placeholder="Password"
+                  type="password"
+                  {...methods.register('password', { required: true })}
+                />
+              </div>
 
-            <div className="w-full p-2">
-              <div className="mt-4 flex justify-center">
-                <Button variant="primary" buttonDisabled={loading}>
-                  {loading ? <LoadingSpinner /> : 'Logg inn'}
+              {error && (
+                <div className="w-full text-red-600 text-sm text-center">
+                  {error}
+                </div>
+              )}
+
+              <div className="w-full mt-4">
+                <Button variant="primary" buttonDisabled={loading} type="submit">
+                  {loading ? <LoadingSpinner /> : 'Log In'}
                 </Button>
               </div>
+
+              <div className="w-full mt-4 text-center">
+                <p className="text-sm text-gray-600">
+                  Don't have an account?{' '}
+                  <Link href="/register" className="text-black font-semibold hover:underline">
+                    Create Account
+                  </Link>
+                </p>
+              </div>
             </div>
-          </div>
-        </form>
-      </FormProvider>
+          </form>
+        </FormProvider>
+      </div>
     </section>
   );
 };

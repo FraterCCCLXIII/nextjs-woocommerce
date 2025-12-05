@@ -5,8 +5,9 @@ import { useQuery, useMutation, ApolloError } from '@apollo/client';
 
 // Components
 import Billing from './Billing.component';
-import CartContents from '../Cart/CartContents.component';
+import CheckoutOrderSummary from './CheckoutOrderSummary.component';
 import LoadingSpinner from '../LoadingSpinner/LoadingSpinner.component';
+import CheckoutConfirmation from './CheckoutConfirmation.component';
 
 // GraphQL
 import { GET_CART } from '@/utils/gql/GQL_QUERIES';
@@ -50,16 +51,96 @@ export interface ICheckoutData {
   transactionId: string;
 }
 
+interface OrderResponse {
+  checkout: {
+    result: string;
+    redirect: string;
+    order: {
+      id: string;
+      databaseId: number;
+      orderNumber: string;
+      orderKey: string;
+      status: string;
+      date: string;
+      total: string;
+      subtotal: string;
+      totalTax: string;
+      shippingTotal: string;
+      paymentMethod: string;
+      paymentMethodTitle: string;
+      currency: string;
+      billing: {
+        firstName: string;
+        lastName: string;
+        address1: string;
+        address2?: string;
+        city: string;
+        state?: string;
+        postcode: string;
+        country: string;
+        email: string;
+        phone?: string;
+        company?: string;
+      };
+      shipping: {
+        firstName: string;
+        lastName: string;
+        address1: string;
+        address2?: string;
+        city: string;
+        state?: string;
+        postcode: string;
+        country: string;
+      };
+      lineItems: {
+        nodes: Array<{
+          id: string;
+          productId: number | null;
+          quantity: number;
+          subtotal: string;
+          total: string;
+          product: {
+            node: {
+              id: string;
+              name: string;
+              image: {
+                sourceUrl: string;
+                altText: string;
+              } | null;
+            };
+          } | null;
+          variation: {
+            node: {
+              id: string;
+              name: string;
+              image: {
+                sourceUrl: string;
+                altText: string;
+              } | null;
+            };
+          } | null;
+        }>;
+      };
+    } | null;
+  };
+}
+
 const CheckoutForm = () => {
   const { cart, clearWooCommerceSession, syncWithWooCommerce } = useCartStore();
   const [orderData, setOrderData] = useState<ICheckoutData | null>(null);
   const [requestError, setRequestError] = useState<ApolloError | null>(null);
   const [orderCompleted, setorderCompleted] = useState<boolean>(false);
+  const [completedOrder, setCompletedOrder] = useState<OrderResponse['checkout']['order'] | null>(null);
 
   // Get cart data query
-  const { data, refetch } = useQuery(GET_CART, {
+  const { data, refetch, error: cartError } = useQuery(GET_CART, {
     notifyOnNetworkStatusChange: true,
-    onCompleted: () => {
+    errorPolicy: 'all', // Return partial data even if there are errors
+  });
+
+  // Use useEffect instead of onCompleted (deprecated)
+  useEffect(() => {
+    if (data) {
       const updatedCart = getFormattedCart(data);
       if (!updatedCart && !data?.cart?.contents?.nodes?.length) {
         clearWooCommerceSession();
@@ -68,27 +149,51 @@ const CheckoutForm = () => {
       if (updatedCart) {
         syncWithWooCommerce(updatedCart);
       }
-    },
-  });
+    }
+  }, [data, clearWooCommerceSession, syncWithWooCommerce]);
+
+  // Log errors for debugging
+  useEffect(() => {
+    if (cartError) {
+      console.error('[CheckoutForm] Error fetching cart:', cartError);
+    }
+  }, [cartError]);
 
   // Checkout GraphQL mutation
-  const [checkout, { loading: checkoutLoading }] = useMutation(
+  const [checkout, { loading: checkoutLoading, data: checkoutData, error: checkoutError }] = useMutation<OrderResponse>(
     CHECKOUT_MUTATION,
     {
       variables: {
         input: orderData,
       },
-      onCompleted: () => {
-        clearWooCommerceSession();
-        setorderCompleted(true);
-        refetch();
-      },
-      onError: (error) => {
-        setRequestError(error);
-        refetch();
-      },
+      errorPolicy: 'all', // Return partial data even if there are errors
     },
   );
+
+  // Use useEffect instead of onCompleted (deprecated)
+  useEffect(() => {
+    if (checkoutData?.checkout?.order) {
+      clearWooCommerceSession();
+      setorderCompleted(true);
+      setCompletedOrder(checkoutData.checkout.order);
+      refetch();
+    }
+  }, [checkoutData, clearWooCommerceSession, refetch]);
+
+  // Log errors for debugging
+  useEffect(() => {
+    if (checkoutError) {
+      setRequestError(checkoutError);
+      console.error('[CheckoutForm] Checkout mutation error:', checkoutError);
+      refetch();
+    }
+  }, [checkoutError, refetch]);
+
+  useEffect(() => {
+    if (checkoutData?.checkout && !checkoutData.checkout.order) {
+      console.error('[CheckoutForm] Checkout completed but no order data received');
+    }
+  }, [checkoutData]);
 
   useEffect(() => {
     if (null !== orderData) {
@@ -105,7 +210,17 @@ const CheckoutForm = () => {
   }, [refetch]);
 
   const handleFormSubmit = (submitData: ICheckoutDataProps) => {
-    const checkOutData = createCheckoutData(submitData);
+    // Ensure all required fields have defaults
+    const formData: ICheckoutDataProps = {
+      ...submitData,
+      address2: submitData.address2 || '',
+      country: submitData.country || 'US',
+      state: submitData.state || '',
+      company: submitData.company || '',
+      paymentMethod: submitData.paymentMethod || 'bacs',
+    };
+    
+    const checkOutData = createCheckoutData(formData);
 
     setOrderData(checkOutData);
     setRequestError(null);
@@ -114,35 +229,78 @@ const CheckoutForm = () => {
   return (
     <>
       {cart && !orderCompleted ? (
-        <div className="container mx-auto">
-          {/*	Order*/}
-          <CartContents />
-          {/*Payment Details*/}
-          <Billing handleFormSubmit={handleFormSubmit} />
-          {/*Error display*/}
-          {requestError && (
-            <div className="h-32 text-xl text-center text-red-600">
-              En feil har oppstått.
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            {/* Left Column - Checkout Form */}
+            <div className="lg:col-span-2 order-2 lg:order-1">
+              <div className="bg-white rounded-lg shadow-sm p-6 md:p-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
+                  Checkout
+                </h1>
+                
+                {/* Error display*/}
+                {requestError && (
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600">
+                      An error has occurred. Please try again.
+                    </p>
+                  </div>
+                )}
+                
+                {/* Checkout Loading*/}
+                {checkoutLoading && (
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                    <p className="text-blue-600 mb-2">
+                      Processing order, please wait...
+                    </p>
+                    <LoadingSpinner />
+                  </div>
+                )}
+                
+                {/* Payment Details Form */}
+                <Billing handleFormSubmit={handleFormSubmit} />
+              </div>
             </div>
-          )}
-          {/* Checkout Loading*/}
-          {checkoutLoading && (
-            <div className="text-xl text-center">
-              Behandler ordre, vennligst vent ...
-              <LoadingSpinner />
+
+            {/* Right Column - Order Summary */}
+            <div className="lg:col-span-1 order-1 lg:order-2">
+              <CheckoutOrderSummary className="lg:sticky lg:top-20" />
             </div>
-          )}
+          </div>
         </div>
       ) : (
         <>
           {!cart && !orderCompleted && (
-            <h1 className="text-2xl m-12 mt-24 font-bold text-center">
-              Ingen produkter i handlekurven
-            </h1>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                <h1 className="text-2xl font-bold text-gray-900 mb-4">
+                  No products in cart
+                </h1>
+                <p className="text-gray-600 mb-6">
+                  Your cart is empty. Add some products to continue.
+                </p>
+                <a
+                  href="/catalog"
+                  className="inline-block px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  Continue Shopping
+                </a>
+              </div>
+            </div>
           )}
-          {orderCompleted && (
-            <div className="container h-24 m-12 mx-auto mt-24 text-xl text-center">
-              Takk for din ordre!
+          {orderCompleted && completedOrder && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <CheckoutConfirmation order={completedOrder} />
+            </div>
+          )}
+          {orderCompleted && !completedOrder && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                <h1 className="text-2xl font-bold text-gray-900 mb-4">
+                  Thank you for your order!
+                </h1>
+              </div>
             </div>
           )}
         </>

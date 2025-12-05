@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useCartStore } from '@/stores/cartStore';
 import Button from '@/components/UI/Button.component';
 import LoadingSpinner from '../LoadingSpinner/LoadingSpinner.component';
+import CartStickyFooter from './CartStickyFooter.component';
 
 import {
   getFormattedCart,
@@ -22,11 +23,16 @@ import { UPDATE_CART } from '@/utils/gql/GQL_MUTATIONS';
 const CartContents = () => {
   const router = useRouter();
   const { clearWooCommerceSession, syncWithWooCommerce } = useCartStore();
-  const isCheckoutPage = router.pathname === '/kasse';
+  const isCheckoutPage = router.pathname === '/checkout';
 
-  const { data, refetch } = useQuery(GET_CART, {
+  const { data, refetch, error: cartError } = useQuery(GET_CART, {
     notifyOnNetworkStatusChange: true,
-    onCompleted: () => {
+    errorPolicy: 'all', // Return partial data even if there are errors
+  });
+
+  // Use useEffect instead of onCompleted (deprecated)
+  useEffect(() => {
+    if (data) {
       const updatedCart = getFormattedCart(data);
       if (!updatedCart && !data?.cart?.contents?.nodes?.length) {
         clearWooCommerceSession();
@@ -35,8 +41,15 @@ const CartContents = () => {
       if (updatedCart) {
         syncWithWooCommerce(updatedCart);
       }
-    },
-  });
+    }
+  }, [data, clearWooCommerceSession, syncWithWooCommerce]);
+
+  // Log errors for debugging
+  useEffect(() => {
+    if (cartError) {
+      console.error('[CartContents] Error fetching cart:', cartError);
+    }
+  }, [cartError]);
 
   const [updateCart, { loading: updateCartProcessing }] = useMutation(
     UPDATE_CART,
@@ -75,8 +88,6 @@ const CartContents = () => {
     refetch();
   }, [refetch]);
 
-  const cartTotal = data?.cart?.total || '0';
-
   const getUnitPrice = (subtotal: string, quantity: number) => {
     const numericSubtotal = parseFloat(subtotal.replace(/[^0-9.-]+/g, ''));
     return isNaN(numericSubtotal)
@@ -85,9 +96,17 @@ const CartContents = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {data?.cart?.contents?.nodes?.length ? (
         <>
+          {/* Top Banner */}
+          <div className="bg-white p-6 mb-8 text-center border-b border-gray-300">
+            <h2 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900">Your Shopping Cart</h2>
+            <p className="text-gray-600 text-sm md:text-base">
+              Review your items and proceed to checkout when ready
+            </p>
+          </div>
+          
           <div className="bg-white rounded-lg p-6 mb-8 md:w-full">
             {data.cart.contents.nodes.map((item: IProductRootObject) => (
               <div
@@ -100,9 +119,13 @@ const CartContents = () => {
                       item.product.node.image?.sourceUrl || '/placeholder.png'
                     }
                     alt={item.product.node.name}
-                    layout="fill"
-                    objectFit="cover"
-                    className="rounded"
+                    fill
+                    sizes="96px"
+                    className="rounded object-cover"
+                    unoptimized={
+                      item.product.node.image?.sourceUrl?.includes('localhost') ||
+                      item.product.node.image?.sourceUrl?.includes('127.0.0.1')
+                    }
                   />
                 </div>
                 <div className="flex-grow ml-4">
@@ -110,7 +133,7 @@ const CartContents = () => {
                     {item.product.node.name}
                   </h2>
                   <p className="text-gray-600">
-                    kr {getUnitPrice(item.subtotal, item.quantity)}
+                    ${getUnitPrice(item.subtotal, item.quantity)}
                   </p>
                 </div>
                 <div className="flex items-center">
@@ -136,10 +159,10 @@ const CartContents = () => {
                         data.cart.contents.nodes,
                       )
                     }
-                    variant="secondary"
+                    variant="danger"
                     buttonDisabled={updateCartProcessing}
                   >
-                    Fjern
+                    Remove
                   </Button>
                 </div>
                 <div className="ml-4">
@@ -148,34 +171,23 @@ const CartContents = () => {
               </div>
             ))}
           </div>
-          <div className="bg-white rounded-lg p-6 md:w-full">
-            <div className="flex justify-end mb-4">
-              <span className="font-semibold pr-2">Subtotal:</span>
-              <span>{cartTotal}</span>
-            </div>
-            {!isCheckoutPage && (
-              <div className="flex justify-center mb-4">
-                <Link href="/kasse" passHref>
-                  <Button variant="primary" fullWidth>GÅ TIL KASSE</Button>
-                </Link>
-              </div>
-            )}
-          </div>
+          {/* Sticky Footer - Subtotal, Terms, and Checkout Button */}
+          {!isCheckoutPage && <CartStickyFooter />}
         </>
       ) : (
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">
-            Ingen produkter i handlekurven
+            No products in cart
           </h2>
-          <Link href="/produkter" passHref>
-            <Button variant="primary">Fortsett å handle</Button>
+          <Link href="/catalog" passHref>
+            <Button variant="primary">Continue Shopping</Button>
           </Link>
         </div>
       )}
       {updateCartProcessing && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-4 rounded-lg">
-            <p className="text-lg mb-2">Oppdaterer handlekurv...</p>
+            <p className="text-lg mb-2">Updating cart...</p>
             <LoadingSpinner />
           </div>
         </div>

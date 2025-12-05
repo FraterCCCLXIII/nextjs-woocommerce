@@ -37,7 +37,7 @@ const SearchResults = ({
   return (
     <article className="cursor-pointer hit">
       <Link
-        href={`/produkt/${product_name.replace(/ /g, '-')}`}
+        href={`/product/${product_name.replace(/ /g, '-')}`}
         passHref
       >
         <div className="flex p-6 bg-white">
@@ -56,12 +56,12 @@ const SearchResults = ({
             {on_sale && (
               <>
                 <span className="text-base line-through">
-                  kr {regular_price}
+                  {regular_price}
                 </span>
-                <span className="ml-2 text-base">kr {sale_price}</span>
+                <span className="ml-2 text-base">{sale_price}</span>
               </>
             )}
-            {!on_sale && <span className="text-base">kr {regular_price}</span>}
+            {!on_sale && <span className="text-base">{regular_price}</span>}
             <br />
             <span className="text-base">
               {trimmedStringToLength(short_description, 30)}

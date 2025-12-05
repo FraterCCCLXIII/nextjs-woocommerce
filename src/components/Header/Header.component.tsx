@@ -25,9 +25,7 @@ const Header = ({ title }: IHeaderProps) => (
         key="pagetitle"
       />
     </Head>
-    <div className="container mx-auto px-6">
-      <Navbar />
-    </div>
+    <Navbar />
   </>
 );
 

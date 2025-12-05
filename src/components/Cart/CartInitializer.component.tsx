@@ -20,17 +20,35 @@ import { GET_CART } from '@/utils/gql/GQL_QUERIES';
 const CartInitializer = () => {
   const { syncWithWooCommerce } = useCartStore();
 
-  const { data, refetch } = useQuery(GET_CART, {
+  const { data, refetch, error, loading } = useQuery(GET_CART, {
     notifyOnNetworkStatusChange: true,
-    onCompleted: () => {
+    errorPolicy: 'all', // Return partial data even if there are errors
+  });
+
+  // Use useEffect instead of onCompleted (deprecated)
+  useEffect(() => {
+    if (data && !loading) {
       // On successful fetch, format the data and sync with the store
       const updatedCart = getFormattedCart(data);
       if (updatedCart) {
         syncWithWooCommerce(updatedCart);
       }
-    },
-    // Consider error handling if needed (e.g., onError callback)
-  });
+    }
+  }, [data, loading, syncWithWooCommerce]);
+
+  // Log errors for debugging
+  useEffect(() => {
+    if (error) {
+      console.error('[CartInitializer] Error fetching cart:', error);
+      if (error.networkError) {
+        console.error('[CartInitializer] Network error details:', {
+          message: error.networkError.message,
+          statusCode: error.networkError.statusCode,
+          result: error.networkError.result,
+        });
+      }
+    }
+  }, [error]);
 
   useEffect(() => {
     refetch();
