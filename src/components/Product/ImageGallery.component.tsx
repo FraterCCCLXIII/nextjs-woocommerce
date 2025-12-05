@@ -53,7 +53,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
                 </div>
               ) : (
                 <Image
-                  src={image.sourceUrl}
+                  src={image.sourceUrl!}
                   priority={index <= 2}
                   className="absolute inset-0 rounded-lg"
                   alt={image.altText || `Product image ${index + 1}`}

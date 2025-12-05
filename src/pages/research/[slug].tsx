@@ -152,7 +152,7 @@ const ResearchPost: NextPage<PostPageProps> = ({
             {post.featuredImage?.node?.sourceUrl && !imageError && (
               <div className="relative w-full h-64 md:h-96 mb-8 rounded-2xl overflow-hidden bg-gray-100">
                 <Image
-                  src={post.featuredImage.node.sourceUrl}
+                  src={post.featuredImage.node.sourceUrl!}
                   alt={post.featuredImage.node.altText || post.title}
                   fill
                   className="object-cover rounded-2xl"

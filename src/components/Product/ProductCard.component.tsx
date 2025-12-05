@@ -42,7 +42,7 @@ const ProductCard = ({
         <Link href={`/product/${slug}`}>
           {hasImage ? (
             <Image
-              src={image.sourceUrl}
+              src={image.sourceUrl!}
               alt={name}
               fill
               className="w-full h-full object-cover object-center transition duration-300 group-hover:scale-105"
