@@ -1,23 +1,40 @@
 "use client";
 
 import { useFormContext } from 'react-hook-form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 /**
  * Payment method component for checkout
  * Supports multiple payment gateways including Stripe WooCommerce
+ * 
+ * Stripe gateway ID can be configured via NEXT_PUBLIC_STRIPE_GATEWAY_ID environment variable
+ * Common values: 'stripe' (most common, matches webhook URL wc-api=wc_stripe), 'stripe_cc', 'woocommerce_gateway_stripe'
  */
 const PaymentMethod = () => {
   const { register, watch, setValue } = useFormContext();
+  
+  // Get Stripe gateway ID from environment or use common defaults
+  // Based on webhook URL format (wc-api=wc_stripe), the gateway ID is typically 'stripe'
+  const stripeGatewayId = process.env.NEXT_PUBLIC_STRIPE_GATEWAY_ID || 'stripe';
+  
   const [selectedMethod, setSelectedMethod] = useState<string>('bacs'); // Default to Bank Transfer (COD)
 
   // Watch payment method to sync with form state
   const paymentMethod = watch('paymentMethod');
 
+  // Sync selectedMethod with form state on mount
+  useEffect(() => {
+    if (paymentMethod) {
+      setSelectedMethod(paymentMethod);
+    }
+  }, [paymentMethod]);
+
   // Update form value when selection changes
   const handleMethodChange = (method: string) => {
-    setSelectedMethod(method);
-    setValue('paymentMethod', method, { shouldValidate: true });
+    // Map 'stripe' to the actual Stripe gateway ID
+    const actualMethod = method === 'stripe' ? stripeGatewayId : method;
+    setSelectedMethod(actualMethod);
+    setValue('paymentMethod', actualMethod, { shouldValidate: true });
   };
 
   // Register the payment method field
@@ -48,7 +65,13 @@ const PaymentMethod = () => {
           <input
             type="radio"
             value="stripe"
-            checked={selectedMethod === 'stripe' || selectedMethod === 'woocommerce_gateway_stripe'}
+            checked={
+              selectedMethod === stripeGatewayId ||
+              selectedMethod === 'stripe' ||
+              selectedMethod === 'stripe_cc' ||
+              selectedMethod === 'woocommerce_gateway_stripe' ||
+              selectedMethod?.startsWith('stripe')
+            }
             onChange={() => handleMethodChange('stripe')}
             className="mr-3 h-4 w-4 cursor-pointer accent-black"
           />

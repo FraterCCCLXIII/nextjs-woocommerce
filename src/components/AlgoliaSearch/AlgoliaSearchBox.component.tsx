@@ -1,13 +1,49 @@
 import algoliasearch from 'algoliasearch';
 import { InstantSearch, SearchBox, Hits } from 'react-instantsearch-dom';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import SearchResults from './SearchResults.component';
 
-const searchClient = algoliasearch(
-  process.env.NEXT_PUBLIC_ALGOLIA_APP_ID ?? 'changeme',
-  process.env.NEXT_PUBLIC_ALGOLIA_PUBLIC_API_KEY ?? 'changeme',
-);
+// Check if Algolia credentials are configured
+const isAlgoliaConfigured = () => {
+  const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID;
+  const apiKey = process.env.NEXT_PUBLIC_ALGOLIA_PUBLIC_API_KEY;
+  const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME;
+  
+  return !!(
+    appId && 
+    appId !== 'changeme' && 
+    appId !== 'changethis' &&
+    apiKey && 
+    apiKey !== 'changeme' && 
+    apiKey !== 'changethis' &&
+    indexName && 
+    indexName !== 'changeme'
+  );
+};
+
+// Create a mock search client that returns empty results when Algolia is not configured
+const createMockSearchClient = () => ({
+  search: async () => ({
+    results: [{
+      hits: [],
+      nbHits: 0,
+      nbPages: 0,
+      page: 0,
+      hitsPerPage: 0,
+      processingTimeMS: 0,
+      query: '',
+      params: '',
+    }],
+  }),
+});
+
+const searchClient = isAlgoliaConfigured()
+  ? algoliasearch(
+      process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!,
+      process.env.NEXT_PUBLIC_ALGOLIA_PUBLIC_API_KEY!,
+    )
+  : createMockSearchClient();
 
 // https://www.algolia.com/doc/api-reference/widgets/instantsearch/react/
 
@@ -17,12 +53,18 @@ const searchClient = algoliasearch(
 const AlgoliaSearchBox = () => {
   const [search, setSearch] = useState<string | null>(null);
   const [hasFocus, sethasFocus] = useState<boolean>(false);
+  const algoliaConfigured = useMemo(() => isAlgoliaConfigured(), []);
+
+  // Don't render if Algolia is not configured
+  if (!algoliaConfigured) {
+    return null;
+  }
 
   return (
     <div className="hidden mt-2 md:inline xl:inline">
       <div className="">
         <InstantSearch
-          indexName={process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'changeme'}
+          indexName={process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME!}
           searchClient={searchClient}
         >
           {/*We need to conditionally add a border because the element has position:fixed*/}

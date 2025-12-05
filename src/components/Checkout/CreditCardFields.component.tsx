@@ -13,9 +13,13 @@ const CreditCardFields = () => {
   
   // Show credit card fields for Stripe or Ecrypt payment methods
   // Stripe can have different gateway IDs: 'stripe', 'woocommerce_gateway_stripe', 'stripe_cc', etc.
+  // Default to 'stripe' based on webhook URL format (wc-api=wc_stripe)
+  const stripeGatewayId = process.env.NEXT_PUBLIC_STRIPE_GATEWAY_ID || 'stripe';
   const showCardFields = 
+    paymentMethod === stripeGatewayId ||
     paymentMethod === 'stripe' || 
     paymentMethod === 'woocommerce_gateway_stripe' ||
+    paymentMethod === 'stripe_cc' ||
     paymentMethod?.startsWith('stripe') ||
     paymentMethod === 'ecrypt_payment_gateway';
 

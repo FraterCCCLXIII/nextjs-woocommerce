@@ -108,9 +108,17 @@ Install and activate the following required plugins in your WordPress site:
    NEXT_PUBLIC_GRAPHQL_URL=https://your-wordpress-site.com/graphql
    
    # Optional: Algolia Search (only if using search)
+   # If not configured, search components will be hidden automatically
    NEXT_PUBLIC_ALGOLIA_APP_ID=your_algolia_app_id
    NEXT_PUBLIC_ALGOLIA_PUBLIC_API_KEY=your_algolia_public_key
    NEXT_PUBLIC_ALGOLIA_INDEX_NAME=your_index_name
+   
+   # Optional: Stripe WooCommerce Gateway ID
+   # Default: 'stripe' (matches webhook URL format wc-api=wc_stripe)
+   # Other common values: 'stripe_cc', 'woocommerce_gateway_stripe'
+   # Check your WooCommerce → Settings → Payments → Stripe to find the exact ID
+   # If your webhook URL shows wc-api=wc_stripe, use 'stripe'
+   NEXT_PUBLIC_STRIPE_GATEWAY_ID=stripe
    
    # Optional: Placeholder images
    NEXT_PUBLIC_PLACEHOLDER_SMALL_IMAGE_URL=https://via.placeholder.com/300
@@ -458,6 +466,42 @@ View the latest Lighthouse results in the GitHub Actions tab under the "Lighthou
 3. Ensure products have prices set
 4. Verify GraphQL endpoint is accessible
 5. Check browser console for errors
+
+### Algolia Search Errors (changeme-dsn.algolia.net)
+
+**Error:** `Failed to load resource: net::ERR_NAME_NOT_RESOLVED` for `changeme-dsn.algolia.net`
+
+**Solutions:**
+1. **If you're not using Algolia search:** The search components will automatically hide when Algolia credentials are not configured. No action needed.
+2. **If you want to use Algolia search:**
+   - Set up an Algolia account at https://www.algolia.com/
+   - Configure the following environment variables:
+     - `NEXT_PUBLIC_ALGOLIA_APP_ID` - Your Algolia Application ID
+     - `NEXT_PUBLIC_ALGOLIA_PUBLIC_API_KEY` - Your Algolia Public API Key
+     - `NEXT_PUBLIC_ALGOLIA_INDEX_NAME` - Your Algolia Index Name
+   - Ensure values are not "changeme" or "changethis" (these are placeholders)
+   - Install and configure the [wp-algolia-woo-indexer](https://github.com/w3bdesign/wp-algolia-woo-indexer) WordPress plugin to sync products to Algolia
+
+### Invalid Payment Method Error
+
+**Error:** `ApolloError: Invalid payment method` during checkout
+
+**Solutions:**
+1. **Check the Stripe gateway ID in WordPress:**
+   - Go to **WooCommerce → Settings → Payments → Stripe**
+   - Note the exact gateway ID (most common: `stripe` - matches webhook URL `wc-api=wc_stripe`)
+   - Other possible values: `stripe_cc`, `woocommerce_gateway_stripe`
+2. **Set the environment variable (if different from default):**
+   - The default is `stripe` which matches the webhook URL format `wc-api=wc_stripe`
+   - If your gateway ID is different, add `NEXT_PUBLIC_STRIPE_GATEWAY_ID=your_gateway_id` to your `.env.local` file
+   - Replace `your_gateway_id` with the actual ID from step 1
+3. **Verify webhook URL matches:**
+   - If your webhook URL shows `wc-api=wc_stripe`, use `stripe` as the gateway ID
+   - This is the most common configuration
+3. **Verify Stripe plugin is active:**
+   - Ensure WooCommerce Stripe plugin is installed and activated
+   - Check that Stripe payment method is enabled in WooCommerce settings
+4. **Restart your development server** after changing environment variables
 
 ### I am getting a cart undefined error or other GraphQL errors
 
