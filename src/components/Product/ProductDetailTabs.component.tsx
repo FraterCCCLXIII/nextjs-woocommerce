@@ -6,6 +6,10 @@ import { cleanHtmlFromText } from '@/utils/functions/productUtils';
 interface ProductDetailTabsProps {
   product: {
     description?: string;
+    metaData?: Array<{
+      key: string;
+      value: string;
+    }>;
     metadata?: {
       description?: string;
       coa?: string;
@@ -19,10 +23,22 @@ const ProductDetailTabs = ({ product }: ProductDetailTabsProps) => {
     'description'
   );
 
-  // Get content from product metadata
+  // Transform metaData array from GraphQL to object format
+  // GraphQL returns: [{ key: "description", value: "..." }, { key: "coa", value: "..." }]
+  // Component expects: { description: "...", coa: "..." }
   let metadata: Record<string, any> = {};
+  
   try {
-    if (product?.metadata) {
+    // First, try to get from metaData array (GraphQL format)
+    if (product?.metaData && Array.isArray(product.metaData)) {
+      product.metaData.forEach((item) => {
+        if (item.key && item.value) {
+          metadata[item.key] = item.value;
+        }
+      });
+    }
+    // Fallback to metadata object/string (legacy format)
+    else if (product?.metadata) {
       if (typeof product.metadata === 'string') {
         try {
           metadata = JSON.parse(product.metadata);

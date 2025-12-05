@@ -6,9 +6,9 @@ import { paddedPrice } from '@/utils/functions/functions';
 interface ProductCardProps {
   databaseId: number;
   name: string;
-  price: string;
-  regularPrice: string;
-  salePrice?: string;
+  price: string | null | undefined;
+  regularPrice: string | null | undefined;
+  salePrice?: string | null | undefined;
   onSale: boolean;
   slug: string;
   image?: {
@@ -29,9 +29,10 @@ const ProductCard = ({
   const [imageError, setImageError] = useState(false);
   
   // Add padding/empty character after currency symbol
-  const formattedPrice = price ? paddedPrice(price, 'kr') : price;
-  const formattedRegularPrice = regularPrice ? paddedPrice(regularPrice, 'kr') : regularPrice;
-  const formattedSalePrice = salePrice ? paddedPrice(salePrice, 'kr') : salePrice;
+  // Handle null/undefined prices gracefully
+  const formattedPrice = price ? paddedPrice(price, 'kr') : 'Price unavailable';
+  const formattedRegularPrice = regularPrice ? paddedPrice(regularPrice, 'kr') : 'Price unavailable';
+  const formattedSalePrice = salePrice ? paddedPrice(salePrice, 'kr') : undefined;
 
   const hasImage = image?.sourceUrl && !imageError;
   const isLocalhost = image?.sourceUrl?.includes('localhost') || image?.sourceUrl?.includes('127.0.0.1');

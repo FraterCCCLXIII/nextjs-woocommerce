@@ -11,13 +11,39 @@ const Catalog: NextPage = ({
   loading,
   error,
 }: InferGetStaticPropsType<typeof getStaticProps>) => {
+  // Transform WordPress products to ensure consistent format and handle null prices
+  // This matches the transformation done in index.tsx for the carousel
+  const transformedProducts = products?.map((product: any) => ({
+    ...product,
+    databaseId: product.databaseId,
+    name: product.name,
+    price: product.price || product.regularPrice || '',
+    regularPrice: product.regularPrice || product.price || '',
+    salePrice: product.salePrice,
+    onSale: product.onSale || false,
+    slug: product.slug,
+    image: product.image,
+    // Preserve other fields that ProductList might need
+    productCategories: product.productCategories,
+    allPaColors: product.allPaColors,
+    allPaSizes: product.allPaSizes,
+    variations: product.variations,
+  })) || [];
+
+  // Filter out products without prices (they can't be displayed properly)
+  const productsWithPrices = transformedProducts.filter(
+    (product: any) => product.price && product.price !== ''
+  );
+
   // Debug logging in development
   if (process.env.NODE_ENV === 'development') {
     console.log('[Catalog Component] Props:', {
-      productsCount: products?.length || 0,
+      originalCount: products?.length || 0,
+      transformedCount: transformedProducts.length,
+      productsWithPricesCount: productsWithPrices.length,
       loading,
       error,
-      sampleProduct: products?.[0],
+      sampleProduct: productsWithPrices?.[0],
     });
   }
 
@@ -42,14 +68,18 @@ const Catalog: NextPage = ({
     );
   }
 
-  if (!products || products.length === 0) {
+  if (!productsWithPrices || productsWithPrices.length === 0) {
     return (
       <Layout title="Products">
         <div className="flex flex-col justify-center items-center min-h-screen gap-4">
           <p className="text-red-500 text-lg font-semibold">No products found</p>
-          <p className="text-gray-600">No products are available in the catalog.</p>
+          <p className="text-gray-600">
+            {products && products.length > 0
+              ? 'No products with valid prices found. Please set prices for your products in WooCommerce.'
+              : 'No products are available in the catalog.'}
+          </p>
           <p className="text-sm text-gray-500">
-            Check: 1) Products exist in WooCommerce 2) Products are published 3) GraphQL endpoint is accessible
+            Check: 1) Products exist in WooCommerce 2) Products are published 3) Products have prices set 4) GraphQL endpoint is accessible
           </p>
         </div>
       </Layout>
@@ -63,7 +93,7 @@ const Catalog: NextPage = ({
       </Head>
 
       <div className="container mx-auto px-4 py-8">
-        <ProductList products={products} title="Products" />
+        <ProductList products={productsWithPrices} title="Products" />
       </div>
     </Layout>
   );

@@ -3,10 +3,33 @@ import { Product, ProductType } from '@/types/product';
 import { getUniqueProductTypes } from '@/utils/functions/productUtils';
 
 export const useProductFilters = (products: Product[]) => {
+  // Calculate dynamic price range from actual products
+  const calculatePriceRange = (products: Product[]): [number, number] => {
+    if (!products || products.length === 0) return [0, 1000];
+    
+    const prices = products
+      .map((product) => {
+        if (!product.price) return null;
+        const price = parseFloat(product.price.replace(/[^0-9.]/g, ''));
+        return isNaN(price) ? null : price;
+      })
+      .filter((price): price is number => price !== null);
+    
+    if (prices.length === 0) return [0, 1000];
+    
+    const minPrice = Math.floor(Math.min(...prices));
+    const maxPrice = Math.ceil(Math.max(...prices));
+    
+    // Add 10% padding to the max price for better UX
+    return [0, Math.max(1000, maxPrice * 1.1)];
+  };
+
   const [sortBy, setSortBy] = useState('popular');
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>(() =>
+    calculatePriceRange(products)
+  );
   const [productTypes, setProductTypes] = useState<ProductType[]>(() =>
     products ? getUniqueProductTypes(products) : [],
   );
@@ -22,7 +45,7 @@ export const useProductFilters = (products: Product[]) => {
   const resetFilters = () => {
     setSelectedSizes([]);
     setSelectedColors([]);
-    setPriceRange([0, 1000]);
+    setPriceRange(calculatePriceRange(products));
     setProductTypes((prev) =>
       prev.map((type) => ({ ...type, checked: false })),
     );

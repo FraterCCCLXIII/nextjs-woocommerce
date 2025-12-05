@@ -16,61 +16,202 @@
 
 ## Table Of Contents (TOC)
 
-- [Installation](#Installation)
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+  - [WordPress Plugin Setup](#step-1-wordpress-plugin-setup)
+  - [WordPress CORS Configuration](#step-2-wordpress-cors-configuration)
+  - [Next.js Project Setup](#step-3-nextjs-project-setup)
+  - [WordPress WooCommerce Setup](#step-4-wordpress-woocommerce-setup)
+  - [Custom Fields Setup](#step-5-custom-fields-setup-optional)
+  - [Image Configuration](#step-6-image-configuration)
+  - [Testing](#step-7-testing)
 - [Coolify Deployment](#coolify-deployment)
-- [Features](#Features)
+- [Custom Fields Setup](#custom-fields-setup)
+- [Features](#features)
 - [Lighthouse Performance Monitoring](#lighthouse-performance-monitoring)
-- [Issues](#Issues)
-- [Troubleshooting](#Troubleshooting)
-- [TODO](#TODO)
+- [Troubleshooting](#troubleshooting)
+- [Issues](#issues)
+- [TODO](#todo)
 - [Future Improvements](SUGGESTIONS.md)
 
 ## Installation
 
-1.  Install and activate the following required plugins, in your WordPress plugin directory:
+### Prerequisites
 
-- [woocommerce](https://wordpress.org/plugins/woocommerce) Ecommerce for WordPress.
-- [wp-graphql](https://wordpress.org/plugins/wp-graphql) Exposes GraphQL for WordPress.
-- [wp-graphql-woocommerce](https://github.com/wp-graphql/wp-graphql-woocommerce) Adds WooCommerce functionality to a WPGraphQL schema.
-- [wp-algolia-woo-indexer](https://github.com/w3bdesign/wp-algolia-woo-indexer) WordPress plugin coded by me. Sends WooCommerce products to Algolia. Required for search to work.
+- Node.js 20.x or higher
+- npm or yarn package manager
+- WordPress site with WooCommerce installed
+- Access to WordPress admin panel
 
-Optional plugin:
+### Step 1: WordPress Plugin Setup
 
-- [headless-wordpress](https://github.com/w3bdesign/headless-wp) Disables the frontend so only the backend is accessible. (optional)
+Install and activate the following required plugins in your WordPress site:
 
-The current release has been tested and is confirmed working with the following versions:
+**Required Plugins:**
+- [WooCommerce](https://wordpress.org/plugins/woocommerce) - Ecommerce for WordPress
+- [WP GraphQL](https://wordpress.org/plugins/wp-graphql) - Exposes GraphQL API for WordPress
+- [WP GraphQL WooCommerce](https://github.com/wp-graphql/wp-graphql-woocommerce) - Adds WooCommerce functionality to WPGraphQL schema
+- [WP GraphQL CORS](https://wordpress.org/plugins/wp-graphql-cors/) - Enables CORS for GraphQL requests
 
-- WordPress version 6.8.1
-- WooCommerce version 9.9.5
-- WP GraphQL version 2.3.3
-- WooGraphQL version 0.19.0
-- WPGraphQL CORS version 2.1
+**Optional Plugins:**
+- [Advanced Custom Fields (ACF)](https://www.advancedcustomfields.com/) - For product custom fields (see [Custom Fields Setup](#custom-fields-setup))
+- [WPGraphQL for Advanced Custom Fields](https://wordpress.org/plugins/wp-graphql-acf/) - Exposes ACF fields to GraphQL (required if using ACF)
+- [wp-algolia-woo-indexer](https://github.com/w3bdesign/wp-algolia-woo-indexer) - Required for Algolia search functionality
+- [headless-wordpress](https://github.com/w3bdesign/headless-wp) - Disables WordPress frontend (optional)
 
-2.  For debugging and testing, install either:
+**Tested Versions:**
+- WordPress: 6.8.1+
+- WooCommerce: 9.9.5+
+- WP GraphQL: 2.3.3+
+- WP GraphQL WooCommerce: 0.19.0+
+- WP GraphQL CORS: 2.1+
 
-    <https://addons.mozilla.org/en-US/firefox/addon/apollo-developer-tools/> (Firefox)
+### Step 2: WordPress CORS Configuration
 
-    <https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm> (Chrome)
+**Critical:** This must be configured correctly or the Next.js app won't be able to communicate with WordPress.
 
-3.  Make sure WooCommerce has some products already
+1. Go to **WordPress Admin** → **Settings** → **WPGraphQL CORS**
+2. In the **Access-Control-Allow-Origin** field, add your Next.js domain:
+   - For local development: `http://localhost:3000`
+   - For production: `https://your-nextjs-domain.com`
+   - Example: `https://try.moleculepeptides.com`
+3. Enable **"Send site credentials"** checkbox
+4. Enable **"Add Site Address to Access-Control-Allow-Origin header"** checkbox
+5. Save settings
 
-4.  Clone or fork the repo and modify `.env.example` and rename it to `.env`
+**Important:** The server must return a specific origin (not `*`) when using `credentials: 'include'`. The CORS plugin handles this automatically when you add your domain to the allowed origins list.
 
-    Then set the environment variables accordingly in Vercel or your preferred hosting solution.
+### Step 3: Next.js Project Setup
 
-    See <https://vercel.com/docs/environment-variables>
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd wordpress-coolify/nextjs-woocommerce
+   ```
 
-5.  Modify the values according to your setup
+2. **Install dependencies:**
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+   Note: `--legacy-peer-deps` is required due to React 19 compatibility
 
-6.  Start the server with `npm run dev`
+3. **Configure environment variables:**
+   
+   Create a `.env.local` file in the project root:
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   Edit `.env.local` and set the following variables:
+   ```env
+   # Required: Your WordPress GraphQL endpoint
+   NEXT_PUBLIC_GRAPHQL_URL=https://your-wordpress-site.com/graphql
+   
+   # Optional: Algolia Search (only if using search)
+   NEXT_PUBLIC_ALGOLIA_APP_ID=your_algolia_app_id
+   NEXT_PUBLIC_ALGOLIA_PUBLIC_API_KEY=your_algolia_public_key
+   NEXT_PUBLIC_ALGOLIA_INDEX_NAME=your_index_name
+   
+   # Optional: Placeholder images
+   NEXT_PUBLIC_PLACEHOLDER_SMALL_IMAGE_URL=https://via.placeholder.com/300
+   NEXT_PUBLIC_PLACEHOLDER_LARGE_IMAGE_URL=https://via.placeholder.com/800
+   ```
 
-7.  Enable COD (Cash On Demand) payment method in WooCommerce
+4. **Start development server:**
+   ```bash
+   npm run dev
+   ```
 
-8.  Add a product to the cart
+5. **Open your browser:**
+   Navigate to `http://localhost:3000`
 
-9.  Proceed to checkout (Gå til kasse)
+### Step 4: WordPress WooCommerce Setup
 
-10. Fill in your details and place the order
+1. **Create products:**
+   - Go to **Products** → **Add New**
+   - Add at least one product with:
+     - Product name
+     - Price
+     - Product image (recommended)
+     - Description
+     - Publish the product
+
+2. **Enable payment method:**
+   - Go to **WooCommerce** → **Settings** → **Payments**
+   - Enable **Cash on Delivery (COD)** payment method
+   - Configure as needed
+
+3. **Verify GraphQL endpoint:**
+   - Visit `https://your-wordpress-site.com/graphql` in your browser
+   - You should see a GraphQL playground or API response
+   - If you see an error, verify WP GraphQL plugin is activated
+
+### Step 5: Custom Fields Setup (Optional)
+
+To enable the product detail tabs (Description, COA, Research), you need to set up custom fields in WordPress.
+
+**Quick Setup with ACF:**
+1. Install **Advanced Custom Fields** plugin
+2. Install **WPGraphQL for Advanced Custom Fields** plugin
+3. Create a Field Group named "Product Detail Tabs"
+4. Add three fields with these exact names:
+   - `description` - Extended description
+   - `coa` - Certificate of Analysis
+   - `research` - Research information
+
+For detailed instructions, see [WORDPRESS_CUSTOM_FIELDS_SETUP.md](WORDPRESS_CUSTOM_FIELDS_SETUP.md).
+
+### Step 6: Image Configuration
+
+The project is configured to load images from:
+- `store.moleculepeptides.com` (already configured)
+- Your WordPress media library
+
+If you need to add additional image domains, edit `next.config.js`:
+```javascript
+images: {
+  remotePatterns: [
+    {
+      protocol: 'https',
+      hostname: 'your-image-domain.com',
+      pathname: '**',
+    },
+  ],
+}
+```
+
+### Step 7: Testing
+
+1. **Test product listing:**
+   - Visit `/catalog` or `/products`
+   - Products should load from WordPress
+
+2. **Test product page:**
+   - Click on a product
+   - Verify product details, images, and tabs display correctly
+
+3. **Test cart functionality:**
+   - Add a product to cart
+   - Verify cart updates
+   - Proceed to checkout
+
+4. **Test GraphQL connection:**
+   - Open browser DevTools → Network tab
+   - Look for requests to `/graphql`
+   - Verify no CORS errors
+
+### Development Tools
+
+For debugging and testing, install browser extensions:
+
+- **Apollo Client DevTools:**
+  - [Chrome](https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm)
+  - [Firefox](https://addons.mozilla.org/en-US/firefox/addon/apollo-developer-tools/)
+
+These tools help you:
+- Inspect GraphQL queries and responses
+- Debug Apollo Client cache
+- Monitor network requests
 
 ## Coolify Deployment
 
@@ -147,6 +288,20 @@ The Dockerfile uses a multi-stage build:
 
 For more detailed information, see [COOLIFY.md](COOLIFY.md).
 
+## Custom Fields Setup
+
+The product detail tabs (Description, COA, Research) require custom fields to be set up in WordPress.
+
+**Quick Start:**
+1. Install **Advanced Custom Fields (ACF)** plugin
+2. Install **WPGraphQL for Advanced Custom Fields** plugin
+3. Create a Field Group with three fields:
+   - `description` - Extended description
+   - `coa` - Certificate of Analysis
+   - `research` - Research information
+
+**For detailed step-by-step instructions, see [WORDPRESS_CUSTOM_FIELDS_SETUP.md](WORDPRESS_CUSTOM_FIELDS_SETUP.md).**
+
 ## Features
 
 - Next.js version 15.1.7
@@ -212,13 +367,111 @@ View the latest Lighthouse results in the GitHub Actions tab under the "Lighthou
 
 ## Troubleshooting
 
+### CORS Errors
+
+**Error:** `Access to fetch at 'https://your-site.com/graphql' from origin 'https://your-nextjs.com' has been blocked by CORS policy`
+
+**Solution:**
+1. Go to WordPress Admin → Settings → WPGraphQL CORS
+2. Add your Next.js domain to the "Access-Control-Allow-Origin" field
+3. Enable "Send site credentials"
+4. Save settings
+5. Clear any caching plugins
+
+### GraphQL Connection Errors
+
+**Error:** `Failed to fetch` or `Network error`
+
+**Solutions:**
+1. Verify `NEXT_PUBLIC_GRAPHQL_URL` is set correctly in `.env.local`
+2. Check that WP GraphQL plugin is activated
+3. Test the GraphQL endpoint directly: `https://your-site.com/graphql`
+4. Verify CORS is configured (see above)
+5. Check WordPress site is accessible and not behind a firewall
+
+### Products Not Displaying
+
+**Possible causes:**
+1. **No products in WooCommerce:**
+   - Create at least one published product
+   - Ensure product has a price set
+
+2. **GraphQL query errors:**
+   - Check browser console for errors
+   - Verify WP GraphQL WooCommerce plugin is active
+   - Test GraphQL endpoint in browser
+
+3. **Products with null prices:**
+   - Products without prices are automatically filtered out
+   - Set a price for all products
+
+### Images Not Loading
+
+**Error:** `Failed to load resource: the server responded with a status of 400`
+
+**Solutions:**
+1. Verify image domain is in `next.config.js` `remotePatterns`
+2. Check that images exist in WordPress media library
+3. Ensure WordPress allows external image access
+4. Verify image URLs are accessible
+
+### Add to Cart Not Working
+
+**Possible causes:**
+1. **CORS error:** See CORS Errors section above
+2. **GraphQL mutation error:** Check browser console
+3. **Product not purchasable:** Verify product stock status in WooCommerce
+4. **Missing variation selection:** For variable products, ensure a variation is selected
+
+### TypeScript Errors During Build
+
+**Error:** `Type error: ...`
+
+**Solutions:**
+1. Run type checking locally: `npx tsc --noEmit`
+2. Fix any TypeScript errors before deploying
+3. Ensure all dependencies are installed: `npm install --legacy-peer-deps`
+
+### Build Fails in Coolify/Docker
+
+**Error:** `npm run build` fails
+
+**Solutions:**
+1. Check build logs for specific errors
+2. Verify all environment variables are set
+3. Ensure `package.json` has all required dependencies
+4. Check that Node.js version matches (20.x)
+
+### Product Detail Tabs Show "No content available"
+
+**Solution:**
+1. Set up custom fields in WordPress (see [Custom Fields Setup](#custom-fields-setup))
+2. Add content to the `description`, `coa`, and `research` fields
+3. Verify fields are exposed to GraphQL (if using ACF, install WPGraphQL for ACF plugin)
+4. Check GraphQL query includes `metaData` field
+
+### Catalog Page Shows "No products found"
+
+**Solutions:**
+1. Verify products exist in WooCommerce
+2. Check products are published (not draft)
+3. Ensure products have prices set
+4. Verify GraphQL endpoint is accessible
+5. Check browser console for errors
+
 ### I am getting a cart undefined error or other GraphQL errors
 
-Check that you are using the 0.12.0 version of the [wp-graphql-woocommerce](https://github.com/wp-graphql/wp-graphql-woocommerce) plugin
+**Solution:**
+- Check that you are using version 0.19.0+ of the [wp-graphql-woocommerce](https://github.com/wp-graphql/wp-graphql-woocommerce) plugin
+- Verify WP GraphQL CORS plugin is configured correctly
+- Check that cart mutations are enabled in WooCommerce settings
 
 ### The products page isn't loading
 
-Check the attributes of the products. Right now the application requires Size and Color.
+**Solution:**
+- Check the attributes of the products. The application works with products that have or don't have Size and Color attributes
+- Verify products are published and have prices
+- Check browser console for specific errors
 
 ## Issues
 

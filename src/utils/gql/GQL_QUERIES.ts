@@ -17,6 +17,10 @@ export const GET_SINGLE_PRODUCT = gql`
         sourceUrl
       }
       name
+      metaData(keysIn: ["description", "coa", "research"]) {
+        key
+        value
+      }
       ... on SimpleProduct {
         salePrice
         regularPrice
@@ -38,8 +42,15 @@ export const GET_SINGLE_PRODUCT = gql`
             stockQuantity
             purchasable
             onSale
+            price
             salePrice
             regularPrice
+            attributes {
+              nodes {
+                name
+                value
+              }
+            }
           }
         }
       }

@@ -32,14 +32,25 @@ const ProductPrice = ({ product, selectedVariation }: ProductPriceProps) => {
       (v) => v.databaseId === selectedVariation
     );
     if (variation) {
-      displayPrice = variation.price || variation.regularPrice;
+      // Use salePrice if on sale, otherwise use price, fallback to regularPrice
+      displayPrice = variation.onSale && variation.salePrice
+        ? variation.salePrice
+        : (variation.price || variation.regularPrice);
       displayRegularPrice = variation.regularPrice;
       displaySalePrice = variation.salePrice;
       isOnSale = variation.onSale;
     }
+  } else {
+    // For products without selected variation, determine display price
+    // If on sale and salePrice exists, use salePrice, otherwise use price or regularPrice
+    if (isOnSale && displaySalePrice) {
+      displayPrice = displaySalePrice;
+    } else {
+      displayPrice = displayPrice || displayRegularPrice;
+    }
   }
 
-  // Format prices
+  // Format prices - ensure we have valid price strings
   const formattedPrice = displayPrice ? paddedPrice(displayPrice, 'kr') : '';
   const formattedRegularPrice = displayRegularPrice
     ? paddedPrice(displayRegularPrice, 'kr')
@@ -58,6 +69,15 @@ const ProductPrice = ({ product, selectedVariation }: ProductPriceProps) => {
         )
       : null;
 
+  // Determine what price to display - displayPrice is already set correctly above
+  // Use formattedPrice (which is based on displayPrice) or fallback to regularPrice
+  const priceToDisplay = formattedPrice || formattedRegularPrice;
+
+  // Don't render if no price is available
+  if (!priceToDisplay) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col text-gray-900">
       <span
@@ -68,12 +88,10 @@ const ProductPrice = ({ product, selectedVariation }: ProductPriceProps) => {
       >
         {product.variations && !selectedVariation && 'From '}
         {product.variations && selectedVariation
-          ? filteredVariantPrice(formattedPrice, '')
-          : isOnSale
-          ? formattedSalePrice
-          : formattedPrice}
+          ? filteredVariantPrice(priceToDisplay, '')
+          : priceToDisplay}
       </span>
-      {isOnSale && (
+      {isOnSale && formattedRegularPrice && (
         <>
           <p className="mt-1">
             <span className="text-gray-600 text-base">Original: </span>
@@ -82,7 +100,7 @@ const ProductPrice = ({ product, selectedVariation }: ProductPriceProps) => {
               data-testid="original-product-price"
             >
               {product.variations && selectedVariation
-                ? filteredVariantPrice(formattedPrice, 'right')
+                ? filteredVariantPrice(formattedRegularPrice, 'right')
                 : formattedRegularPrice}
             </span>
           </p>
