@@ -10,6 +10,19 @@ import { useFormContext } from 'react-hook-form';
 const CreditCardFields = () => {
   const { register, formState: { errors }, watch } = useFormContext();
   const paymentMethod = watch('paymentMethod');
+  
+  // Show credit card fields for Stripe or Ecrypt payment methods
+  // Stripe can have different gateway IDs: 'stripe', 'woocommerce_gateway_stripe', 'stripe_cc', etc.
+  const showCardFields = 
+    paymentMethod === 'stripe' || 
+    paymentMethod === 'woocommerce_gateway_stripe' ||
+    paymentMethod?.startsWith('stripe') ||
+    paymentMethod === 'ecrypt_payment_gateway';
+
+  // Don't render if payment method doesn't require card fields
+  if (!showCardFields) {
+    return null;
+  }
 
   return (
     <div className="mb-6">
@@ -22,7 +35,7 @@ const CreditCardFields = () => {
           placeholder="Name on card"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm"
           {...register('cardName', {
-            required: paymentMethod === 'ecrypt_payment_gateway' ? 'Name on card is required' : false
+            required: showCardFields ? 'Name on card is required' : false
           })}
         />
         {errors.cardName && (
@@ -39,12 +52,12 @@ const CreditCardFields = () => {
             maxLength={19}
             className="w-full px-3 py-2 pr-32 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm"
             {...register('cardNumber', {
-              required: paymentMethod === 'ecrypt_payment_gateway' ? 'Card number is required' : false,
+              required: showCardFields ? 'Card number is required' : false,
               validate: (value) => {
-                if (paymentMethod === 'ecrypt_payment_gateway' && !value) {
+                if (showCardFields && !value) {
                   return 'Card number is required';
                 }
-                if (paymentMethod === 'ecrypt_payment_gateway' && value && !/^[\d\s]{13,19}$/.test(value)) {
+                if (showCardFields && value && !/^[\d\s]{13,19}$/.test(value)) {
                   return 'Please enter a valid card number';
                 }
                 return true;
@@ -90,12 +103,12 @@ const CreditCardFields = () => {
             maxLength={5}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm"
             {...register('cardExpiry', {
-              required: paymentMethod === 'ecrypt_payment_gateway' ? 'Expiration date is required' : false,
+              required: showCardFields ? 'Expiration date is required' : false,
               validate: (value) => {
-                if (paymentMethod === 'ecrypt_payment_gateway' && !value) {
+                if (showCardFields && !value) {
                   return 'Expiration date is required';
                 }
-                if (paymentMethod === 'ecrypt_payment_gateway' && value && !/^(0[1-9]|1[0-2])\s?\/\s?([0-9]{2})$/.test(value)) {
+                if (showCardFields && value && !/^(0[1-9]|1[0-2])\s?\/\s?([0-9]{2})$/.test(value)) {
                   return 'Please enter MM/YY format';
                 }
                 return true;
@@ -123,12 +136,12 @@ const CreditCardFields = () => {
             maxLength={4}
             className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm"
             {...register('cardCvc', {
-              required: paymentMethod === 'ecrypt_payment_gateway' ? 'CVC is required' : false,
+              required: showCardFields ? 'CVC is required' : false,
               validate: (value) => {
-                if (paymentMethod === 'ecrypt_payment_gateway' && !value) {
+                if (showCardFields && !value) {
                   return 'CVC is required';
                 }
-                if (paymentMethod === 'ecrypt_payment_gateway' && value && !/^[0-9]{3,4}$/.test(value)) {
+                if (showCardFields && value && !/^[0-9]{3,4}$/.test(value)) {
                   return 'Please enter a valid CVC';
                 }
                 return true;

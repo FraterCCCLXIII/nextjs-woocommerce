@@ -39,21 +39,21 @@ const ProductCard = ({
 
   return (
     <div className="group">
-      <div className="aspect-[3/4] overflow-hidden bg-gray-100 relative">
+      <div className="aspect-[3/4] overflow-hidden bg-gray-100 relative rounded-lg">
         <Link href={`/product/${slug}`}>
           {hasImage ? (
             <Image
               src={image.sourceUrl!}
               alt={name}
               fill
-              className="w-full h-full object-cover object-center transition duration-300 group-hover:scale-105"
+              className="w-full h-full object-cover object-center transition duration-300 group-hover:scale-105 rounded-lg"
               priority={databaseId === 1}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               onError={() => setImageError(true)}
               unoptimized={isLocalhost}
             />
           ) : (
-            <div className="h-full w-full bg-gray-100 flex items-center justify-center">
+            <div className="h-full w-full bg-gray-100 flex items-center justify-center rounded-lg">
               <span className="text-gray-400">No image</span>
             </div>
           )}

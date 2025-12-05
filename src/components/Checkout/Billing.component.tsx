@@ -26,16 +26,11 @@ interface IBillingProps {
 }
 
 const OrderButton = () => {
-  const { register, formState: { errors } } = useFormContext();
+  const { register, formState: { errors }, watch } = useFormContext();
+  const paymentMethod = watch('paymentMethod');
 
   return (
     <div className="w-full">
-      <input
-        placeholder="paymentMethod"
-        type="hidden"
-        value="bacs"
-        {...register('paymentMethod')}
-      />
       
       {/* Terms Checkbox in Grey Border Container */}
       <div className="mb-6 p-4 bg-gray-50 border border-gray-300 rounded-lg">
