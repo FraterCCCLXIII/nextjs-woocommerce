@@ -41,16 +41,23 @@ interface IAllPaSizes {
 }
 
 export interface IVariationNodes {
-  __typename: string;
-  id: string;
+  __typename?: string;
+  id?: string;
   databaseId: number;
   name: string;
+  price?: string;
   stockStatus: string;
   stockQuantity: number;
   purchasable: boolean;
   onSale: boolean;
   salePrice?: string;
   regularPrice: string;
+  attributes?: {
+    nodes?: Array<{
+      name: string;
+      value: string;
+    }>;
+  };
 }
 
 interface IVariations {
