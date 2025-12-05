@@ -30,8 +30,10 @@ export const useProductFilters = (products: Product[]) => {
 
   const filterProducts = (products: Product[]) => {
     const filtered = products?.filter((product: Product) => {
-      // Filter by price
+      // Filter by price - skip products with null/undefined prices
+      if (!product.price) return false;
       const productPrice = parseFloat(product.price.replace(/[^0-9.]/g, ''));
+      if (isNaN(productPrice)) return false;
       const withinPriceRange =
         productPrice >= priceRange[0] && productPrice <= priceRange[1];
       if (!withinPriceRange) return false;
@@ -70,8 +72,11 @@ export const useProductFilters = (products: Product[]) => {
 
     // Sort products
     return [...(filtered || [])].sort((a, b) => {
-      const priceA = parseFloat(a.price.replace(/[^0-9.]/g, ''));
-      const priceB = parseFloat(b.price.replace(/[^0-9.]/g, ''));
+      // Handle null/undefined prices
+      const priceAStr = a.price || '0';
+      const priceBStr = b.price || '0';
+      const priceA = parseFloat(priceAStr.replace(/[^0-9.]/g, '')) || 0;
+      const priceB = parseFloat(priceBStr.replace(/[^0-9.]/g, '')) || 0;
 
       switch (sortBy) {
         case 'price-low':
