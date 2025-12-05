@@ -12,6 +12,7 @@ interface ProductTabsProps {
     length?: string;
     width?: string;
     height?: string;
+    [key: string]: unknown; // Allow additional properties
   };
 }
 
