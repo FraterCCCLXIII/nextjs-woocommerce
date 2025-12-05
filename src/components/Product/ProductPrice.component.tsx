@@ -8,6 +8,7 @@ interface ProductPriceProps {
     onSale: boolean;
     variations?: {
       nodes?: Array<{
+        databaseId: number;
         price: string;
         regularPrice: string;
         salePrice?: string;
