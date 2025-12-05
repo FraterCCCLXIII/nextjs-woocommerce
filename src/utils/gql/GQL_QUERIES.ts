@@ -29,16 +29,6 @@ export const GET_SINGLE_PRODUCT = gql`
         regularPrice
         price
         id
-        allPaColors {
-          nodes {
-            name
-          }
-        }
-        allPaSizes {
-          nodes {
-            name
-          }
-        }
         variations {
           nodes {
             id
@@ -138,17 +128,6 @@ export const FETCH_ALL_PRODUCTS_QUERY = gql`
             nodes {
               name
               slug
-            }
-          }
-          allPaColors {
-            nodes {
-              name
-              slug
-            }
-          }
-          allPaSizes {
-            nodes {
-              name
             }
           }
           variations {
