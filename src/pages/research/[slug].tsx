@@ -127,7 +127,7 @@ const ResearchPost: NextPage<PostPageProps> = ({
             {/* Tags */}
             {post.tags?.nodes && post.tags.nodes.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
-                {post.tags.nodes.map((tag) => (
+                {post.tags.nodes.map((tag: { name: string; slug: string }) => (
                   <span
                     key={tag.slug}
                     className="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-full"

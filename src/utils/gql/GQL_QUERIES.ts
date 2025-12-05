@@ -330,3 +330,99 @@ export const GET_CUSTOMER_ORDERS = gql`
     }
   }
 `;
+
+/**
+ * Fetch all blog posts for research page
+ */
+export const GET_ALL_POSTS = gql`
+  query GetAllPosts {
+    posts(first: 50, where: { status: PUBLISH }) {
+      nodes {
+        id
+        databaseId
+        title
+        slug
+        excerpt
+        date
+        author {
+          node {
+            name
+          }
+        }
+        featuredImage {
+          node {
+            sourceUrl
+            altText
+            mediaDetails {
+              width
+              height
+            }
+          }
+        }
+        categories {
+          nodes {
+            name
+            slug
+          }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Fetch a single post by slug
+ */
+export const GET_POST_BY_SLUG = gql`
+  query GetPostBySlug($slug: ID!) {
+    post(id: $slug, idType: SLUG) {
+      id
+      databaseId
+      title
+      slug
+      content
+      excerpt
+      date
+      author {
+        node {
+          name
+        }
+      }
+      featuredImage {
+        node {
+          sourceUrl
+          altText
+          mediaDetails {
+            width
+            height
+          }
+        }
+      }
+      categories {
+        nodes {
+          name
+          slug
+        }
+      }
+      tags {
+        nodes {
+          name
+          slug
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Get all post slugs for static paths
+ */
+export const GET_ALL_POST_SLUGS = gql`
+  query GetAllPostSlugs {
+    posts(first: 100, where: { status: PUBLISH }) {
+      nodes {
+        slug
+      }
+    }
+  }
+`;
