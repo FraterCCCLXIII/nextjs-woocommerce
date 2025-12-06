@@ -1,5 +1,6 @@
 import { ApolloClient, InMemoryCache } from '@apollo/client';
-import { LOGIN_USER } from './gql/GQL_MUTATIONS';
+import { LOGIN_USER, LOGOUT_USER } from './gql/GQL_MUTATIONS';
+import client from './apollo/ApolloClient';
 
 // Cookie-based authentication - no token storage needed
 export function hasCredentials() {
@@ -83,10 +84,48 @@ export async function login(username: string, password: string) {
 }
 
 export async function logout() {
-  // For cookie-based auth, we might need a logout mutation
-  // For now, we can clear any client-side state
-  if (typeof window !== 'undefined') {
-    // Redirect to login or home page after logout
-    window.location.href = '/';
+  try {
+    console.log('[Auth] Starting logout process...');
+
+    // Step 1: Call logout mutation to clear server-side session
+    try {
+      await client.mutate({
+        mutation: LOGOUT_USER,
+        fetchPolicy: 'no-cache',
+        errorPolicy: 'all', // Continue even if mutation fails
+      });
+      console.log('[Auth] Logout mutation successful');
+    } catch (error) {
+      // If logout mutation fails (e.g., not enabled or user already logged out), continue with client-side cleanup
+      console.warn('[Auth] Logout mutation failed, proceeding with client-side logout:', error);
+    }
+
+    // Step 2: Clear Apollo cache
+    try {
+      await client.clearStore();
+      await client.resetStore();
+      console.log('[Auth] Apollo cache cleared');
+    } catch (cacheError) {
+      console.error('[Auth] Error clearing Apollo cache:', cacheError);
+    }
+
+    // Step 3: Clear localStorage and sessionStorage
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+      sessionStorage.clear();
+      console.log('[Auth] Storage cleared');
+    }
+
+    // Step 4: Redirect to home page
+    if (typeof window !== 'undefined') {
+      // Use replace to prevent back button from going to account page
+      window.location.replace('/?logout=success');
+    }
+  } catch (error) {
+    console.error('[Auth] Logout error:', error);
+    // Even if logout fails, try to redirect
+    if (typeof window !== 'undefined') {
+      window.location.replace('/');
+    }
   }
 }

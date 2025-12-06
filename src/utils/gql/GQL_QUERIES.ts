@@ -322,6 +322,29 @@ export const GET_CURRENT_USER = gql`
       firstName
       lastName
       email
+      username
+      billing {
+        firstName
+        lastName
+        address1
+        address2
+        city
+        postcode
+        country
+        state
+        email
+        phone
+      }
+      shipping {
+        firstName
+        lastName
+        address1
+        address2
+        city
+        postcode
+        country
+        state
+      }
     }
   }
 `;

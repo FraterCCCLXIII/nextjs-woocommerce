@@ -4,6 +4,7 @@ import { useFormContext } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_AVAILABLE_PAYMENT_GATEWAYS } from '@/utils/gql/GQL_QUERIES';
+import LoadingSpinner from '../LoadingSpinner/LoadingSpinner.component';
 
 interface PaymentGateway {
   id: string;
@@ -27,15 +28,34 @@ const PaymentMethod = () => {
   const stripeGatewayId = process.env.NEXT_PUBLIC_STRIPE_GATEWAY_ID || 'stripe';
   
   // Fetch available payment gateways from WooCommerce
-  const { data, loading } = useQuery<{ paymentGateways: { nodes: PaymentGateway[] } }>(
+  const { data, loading, error } = useQuery<{ paymentGateways: { nodes: PaymentGateway[] } }>(
     GET_AVAILABLE_PAYMENT_GATEWAYS,
     {
       errorPolicy: 'all', // Continue even if query fails
+      fetchPolicy: 'network-only', // Always fetch from network
     }
   );
 
+  // Debug logging
+  useEffect(() => {
+    if (data) {
+      console.log('[PaymentMethod] Payment gateways data:', data);
+      console.log('[PaymentMethod] All gateways:', data.paymentGateways?.nodes);
+      console.log('[PaymentMethod] Enabled gateways:', data.paymentGateways?.nodes?.filter(g => g.enabled));
+    }
+    if (error) {
+      console.error('[PaymentMethod] Error fetching payment gateways:', error);
+    }
+  }, [data, error]);
+
   // Get enabled payment gateways
-  const enabledGateways = data?.paymentGateways?.nodes?.filter(gateway => gateway.enabled) || [];
+  // Note: WooCommerce GraphQL returns only available (enabled) gateways by default
+  // But we'll filter by enabled property if it exists
+  const allGateways = data?.paymentGateways?.nodes || [];
+  const enabledGateways = allGateways.filter(gateway => {
+    // If enabled property exists, use it; otherwise assume all returned gateways are enabled
+    return gateway.enabled !== false;
+  });
   
   // Create a map of gateway IDs for quick lookup
   const enabledGatewayIds = new Set(enabledGateways.map(gateway => gateway.id));
@@ -121,7 +141,28 @@ const PaymentMethod = () => {
     return (
       <div className="mb-6">
         <div className="text-sm text-gray-600 mb-3">Payment method</div>
-        <div className="text-sm text-gray-500">Loading payment methods...</div>
+        <div className="flex items-center gap-2">
+          <LoadingSpinner />
+          <span className="text-sm text-gray-500">Loading payment methods...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state with helpful message
+  if (error) {
+    console.error('[PaymentMethod] GraphQL error:', error);
+    return (
+      <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="text-sm text-gray-600 mb-2 font-semibold">Payment method</div>
+        <div className="text-sm text-yellow-700">
+          Unable to load payment methods. Please check your WooCommerce payment gateway settings.
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-2 text-xs text-yellow-600">
+              Error: {error.message || 'Unknown error'}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -129,9 +170,19 @@ const PaymentMethod = () => {
   // If no gateways are enabled, show a message
   if (enabledGateways.length === 0) {
     return (
-      <div className="mb-6">
-        <div className="text-sm text-gray-600 mb-3">Payment method</div>
-        <div className="text-sm text-red-500">No payment methods available. Please enable at least one payment gateway in WooCommerce settings.</div>
+      <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="text-sm text-gray-600 mb-2 font-semibold">Payment method</div>
+        <div className="text-sm text-yellow-700">
+          No payment methods available. Please enable at least one payment gateway in WooCommerce settings.
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-2 text-xs text-yellow-600">
+              Debug: Found {allGateways.length} total gateways, {enabledGateways.length} enabled.
+              {allGateways.length > 0 && (
+                <div>Gateway IDs: {allGateways.map(g => g.id).join(', ')}</div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   }

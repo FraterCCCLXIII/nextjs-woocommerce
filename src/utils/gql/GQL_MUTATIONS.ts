@@ -214,3 +214,45 @@ export const UPDATE_CART = gql`
     }
   }
 `;
+
+export const LOGOUT_USER = gql`
+  mutation Logout {
+    logout {
+      status
+    }
+  }
+`;
+
+export const UPDATE_CUSTOMER = gql`
+  mutation UpdateCustomer($input: UpdateCustomerInput!) {
+    updateCustomer(input: $input) {
+      customer {
+        id
+        email
+        firstName
+        lastName
+        username
+        billing {
+          firstName
+          lastName
+          address1
+          address2
+          city
+          postcode
+          country
+          email
+          phone
+        }
+        shipping {
+          firstName
+          lastName
+          address1
+          address2
+          city
+          postcode
+          country
+        }
+      }
+    }
+  }
+`;
