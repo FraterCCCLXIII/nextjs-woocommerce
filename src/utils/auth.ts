@@ -83,6 +83,71 @@ export async function login(username: string, password: string) {
   }
 }
 
+/**
+ * Clears all cookies for the current domain
+ * This is necessary for proper logout with cookie-based authentication
+ */
+function clearAllCookies() {
+  if (typeof window === 'undefined') return;
+
+  const hostname = window.location.hostname;
+  const paths = ['/', '/wp-admin/', '/wp-content/', '/wp-includes/'];
+  const domains = [
+    hostname,
+    `.${hostname}`,
+    window.location.host,
+    `.${window.location.host}`,
+  ];
+
+  // Get all cookies
+  const allCookies = document.cookie.split(';');
+  const cookiesToClear: string[] = [];
+
+  // Collect all cookie names
+  allCookies.forEach((cookie) => {
+    const cookieName = cookie.split('=')[0].trim();
+    if (cookieName) {
+      cookiesToClear.push(cookieName);
+    }
+  });
+
+  // Also clear known WordPress/WooCommerce cookie prefixes
+  const cookiePrefixes = [
+    'wordpress_logged_in_',
+    'wordpress_',
+    'wp_',
+    'wp-settings-',
+    'wp-settings-time-',
+    'woocommerce_',
+    'woocommerce_cart_',
+    'woocommerce_items_in_cart',
+    'woocommerce_cart_hash',
+    'woocommerce_session_',
+  ];
+
+  // Clear cookies with all combinations of paths and domains
+  cookiesToClear.forEach((cookieName) => {
+    // Check if it matches any prefix or is in our list
+    const shouldClear = cookiePrefixes.some((prefix) => cookieName.startsWith(prefix)) || 
+                       cookiesToClear.includes(cookieName);
+
+    if (shouldClear) {
+      paths.forEach((path) => {
+        domains.forEach((domain) => {
+          // Try clearing with specific domain and path
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=${domain};`;
+          // Also try without domain
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
+          // Try with secure flag
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=${domain}; secure;`;
+          // Try with SameSite
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=${domain}; SameSite=None; Secure;`;
+        });
+      });
+    }
+  });
+}
+
 export async function logout() {
   try {
     console.log('[Auth] Starting logout process...');
@@ -100,32 +165,75 @@ export async function logout() {
       console.warn('[Auth] Logout mutation failed, proceeding with client-side logout:', error);
     }
 
-    // Step 2: Clear Apollo cache
+    // Step 2: Clear WooCommerce session from localStorage (before clearing all)
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('woo-session');
+      localStorage.removeItem('woocommerce-cart');
+      console.log('[Auth] WooCommerce session cleared');
+    }
+
+    // Step 3: Clear all cookies (WordPress session cookies, etc.)
+    if (typeof window !== 'undefined') {
+      clearAllCookies();
+      console.log('[Auth] Cookies cleared');
+    }
+
+    // Step 4: Clear Apollo cache (must happen before redirect)
     try {
+      // Clear the cache first
       await client.clearStore();
-      await client.resetStore();
       console.log('[Auth] Apollo cache cleared');
+      
+      // Reset the store to ensure fresh state
+      await client.resetStore();
+      console.log('[Auth] Apollo store reset');
     } catch (cacheError) {
       console.error('[Auth] Error clearing Apollo cache:', cacheError);
     }
 
-    // Step 3: Clear localStorage and sessionStorage
+    // Step 5: Clear remaining localStorage and sessionStorage
     if (typeof window !== 'undefined') {
       localStorage.clear();
       sessionStorage.clear();
       console.log('[Auth] Storage cleared');
     }
 
-    // Step 4: Redirect to home page
+    // Step 6: Force a hard redirect to home page
+    // Add a small delay to ensure all cleanup is complete
     if (typeof window !== 'undefined') {
-      // Use replace to prevent back button from going to account page
-      window.location.replace('/?logout=success');
+      setTimeout(() => {
+        // Use replace to prevent back button from going to account page
+        // Add timestamp to prevent caching
+        window.location.replace('/?logout=success&t=' + Date.now());
+      }, 100);
     }
   } catch (error) {
     console.error('[Auth] Logout error:', error);
-    // Even if logout fails, try to redirect
+    // Even if logout fails, perform comprehensive cleanup
+    try {
+      if (typeof window !== 'undefined') {
+        // Clear WooCommerce session
+        localStorage.removeItem('woo-session');
+        localStorage.removeItem('woocommerce-cart');
+        // Clear all cookies
+        clearAllCookies();
+        // Clear storage
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+      
+      // Clear Apollo cache
+      await client.clearStore();
+      await client.resetStore();
+    } catch (clearError) {
+      console.error('[Auth] Error during cleanup:', clearError);
+    }
+    
+    // Always redirect to home page even on error
     if (typeof window !== 'undefined') {
-      window.location.replace('/');
+      setTimeout(() => {
+        window.location.replace('/?logout=success&t=' + Date.now());
+      }, 100);
     }
   }
 }
