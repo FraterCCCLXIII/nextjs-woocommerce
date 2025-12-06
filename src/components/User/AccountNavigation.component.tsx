@@ -8,15 +8,16 @@ interface AccountNavItem {
   label: string;
   href: string;
   endpoint: string;
+  icon?: string;
 }
 
 const accountNavItems: AccountNavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', href: '/account', endpoint: 'dashboard' },
-  { id: 'orders', label: 'Orders', href: '/account/orders', endpoint: 'orders' },
-  { id: 'downloads', label: 'Downloads', href: '/account/downloads', endpoint: 'downloads' },
-  { id: 'addresses', label: 'Addresses', href: '/account/addresses', endpoint: 'edit-address' },
-  { id: 'payment-methods', label: 'Payment methods', href: '/account/payment-methods', endpoint: 'payment-methods' },
-  { id: 'account-details', label: 'Account details', href: '/account/account-details', endpoint: 'edit-account' },
+  { id: 'my-details', label: 'My Details', href: '/account?tab=my-details', endpoint: 'my-details', icon: 'information-circle' },
+  { id: 'orders', label: 'Orders', href: '/account?tab=orders', endpoint: 'orders', icon: 'bag-check' },
+  { id: 'downloads', label: 'Downloads', href: '/account?tab=downloads', endpoint: 'downloads', icon: 'cloud-download' },
+  { id: 'addresses', label: 'Addresses', href: '/account?tab=addresses', endpoint: 'addresses', icon: 'location' },
+  { id: 'payment-methods', label: 'Payment methods', href: '/account?tab=payment-methods', endpoint: 'payment-methods', icon: 'card' },
+  { id: 'account-details', label: 'Account details', href: '/account?tab=account-details', endpoint: 'account-details', icon: 'settings' },
 ];
 
 interface AccountNavigationProps {
@@ -28,15 +29,20 @@ const AccountNavigation = ({ activeEndpoint = 'dashboard' }: AccountNavigationPr
   const currentPath = router.pathname;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Determine active item based on current path
+  // Determine active item based on query parameter or path
   const getActiveItem = () => {
-    if (currentPath === '/account') return 'dashboard';
+    const tab = router.query.tab as string;
+    if (tab) {
+      return tab;
+    }
+    // Fallback to path-based detection for backward compatibility
+    if (currentPath === '/account') return 'my-details';
     if (currentPath.startsWith('/account/orders')) return 'orders';
     if (currentPath.startsWith('/account/downloads')) return 'downloads';
     if (currentPath.startsWith('/account/addresses')) return 'addresses';
     if (currentPath.startsWith('/account/payment-methods')) return 'payment-methods';
     if (currentPath.startsWith('/account/account-details')) return 'account-details';
-    return activeEndpoint;
+    return activeEndpoint || 'my-details';
   };
 
   const activeId = getActiveItem();
@@ -56,26 +62,50 @@ const AccountNavigation = ({ activeEndpoint = 'dashboard' }: AccountNavigationPr
       <ul className="space-y-1 lg:block flex flex-wrap gap-2">
         {accountNavItems.map((item) => {
           const isActive = item.id === activeId;
-          return (
-            <li
-              key={item.id}
-              className={`woocommerce-MyAccount-navigation-link woocommerce-MyAccount-navigation-link--${item.endpoint} ${
-                isActive ? 'is-active' : ''
-              }`}
-            >
-              <Link
-                href={item.href}
-                className={`block px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+            return (
+              <li
+                key={item.id}
+                className={`woocommerce-MyAccount-navigation-link woocommerce-MyAccount-navigation-link--${item.endpoint} ${
+                  isActive ? 'is-active' : ''
                 }`}
-                aria-current={isActive ? 'page' : undefined}
               >
-                {item.label}
-              </Link>
-            </li>
-          );
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  {item.icon && (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {item.icon === 'information-circle' && (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      )}
+                      {item.icon === 'bag-check' && (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      )}
+                      {item.icon === 'cloud-download' && (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                      )}
+                      {item.icon === 'location' && (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      )}
+                      {item.icon === 'card' && (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      )}
+                      {item.icon === 'settings' && (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      )}
+                    </svg>
+                  )}
+                  {item.label}
+                </Link>
+              </li>
+            );
         })}
         
         {/* Logout Link */}

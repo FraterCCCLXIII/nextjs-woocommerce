@@ -2,6 +2,40 @@ import { ApolloClient, InMemoryCache } from '@apollo/client';
 import { LOGIN_USER, LOGOUT_USER } from './gql/GQL_MUTATIONS';
 import client from './apollo/ApolloClient';
 
+// Return URL handling for post-login redirects
+const RETURN_URL_KEY = 'loginReturnUrl';
+
+export function setReturnUrl(url: string): void {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(RETURN_URL_KEY, url);
+  }
+}
+
+export function getReturnUrl(): string | null {
+  if (typeof window !== 'undefined') {
+    return sessionStorage.getItem(RETURN_URL_KEY);
+  }
+  return null;
+}
+
+export function clearReturnUrl(): void {
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(RETURN_URL_KEY);
+  }
+}
+
+export function navigateToLogin(currentRoute?: string): string {
+  if (typeof window !== 'undefined') {
+    const route = currentRoute || window.location.pathname + window.location.search;
+    // Only store return URL if it's not already the login page
+    if (route && route !== '/login' && route !== '/account') {
+      setReturnUrl(route);
+    }
+    return '/login';
+  }
+  return '/login';
+}
+
 // Cookie-based authentication - no token storage needed
 export function hasCredentials() {
   if (typeof window === 'undefined') {

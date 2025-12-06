@@ -5,6 +5,7 @@ import {
   useFormContext,
   FormProvider,
 } from 'react-hook-form';
+import { useState } from 'react';
 
 // Components
 import { InputField } from '@/components/Input/InputField.component';
@@ -23,9 +24,13 @@ import { ICheckoutDataProps } from '@/utils/functions/functions';
 
 interface IBillingProps {
   handleFormSubmit: SubmitHandler<ICheckoutDataProps>;
+  onStripeClientSecret?: (secret: string) => void;
+  onStripeElements?: (elements: any) => void;
+  onStripePaymentReady?: (ready: boolean) => void;
+  isProcessingStripe?: boolean;
 }
 
-const OrderButton = () => {
+const OrderButton = ({ isProcessingStripe }: { isProcessingStripe?: boolean }) => {
   const { register, formState: { errors }, watch } = useFormContext();
   const paymentMethod = watch('paymentMethod');
 
@@ -54,15 +59,45 @@ const OrderButton = () => {
       </div>
 
       <div className="flex justify-center">
-        <Button type="submit">PLACE ORDER</Button>
+        <Button type="submit" disabled={isProcessingStripe}>
+          {isProcessingStripe ? 'PROCESSING PAYMENT...' : 'PLACE ORDER'}
+        </Button>
       </div>
     </div>
   );
 };
 
-const Billing = ({ handleFormSubmit }: IBillingProps) => {
+const Billing = ({ 
+  handleFormSubmit, 
+  onStripeClientSecret, 
+  onStripeElements, 
+  onStripePaymentReady,
+  isProcessingStripe = false 
+}: IBillingProps) => {
   const methods = useForm<ICheckoutDataProps>();
   const email = methods.watch('email') || '';
+  const [stripeClientSecret, setStripeClientSecret] = useState<string>('');
+  const [stripeElements, setStripeElements] = useState<any>(null);
+  const [stripePaymentReady, setStripePaymentReady] = useState<boolean>(false);
+  
+  // Pass Stripe data to parent
+  useEffect(() => {
+    if (onStripeClientSecret && stripeClientSecret) {
+      onStripeClientSecret(stripeClientSecret);
+    }
+  }, [stripeClientSecret, onStripeClientSecret]);
+  
+  useEffect(() => {
+    if (onStripeElements && stripeElements) {
+      onStripeElements(stripeElements);
+    }
+  }, [stripeElements, onStripeElements]);
+  
+  useEffect(() => {
+    if (onStripePaymentReady !== undefined) {
+      onStripePaymentReady(stripePaymentReady);
+    }
+  }, [stripePaymentReady, onStripePaymentReady]);
 
   return (
     <section className="text-gray-700">
@@ -153,10 +188,17 @@ const Billing = ({ handleFormSubmit }: IBillingProps) => {
           )}
 
           {/* Payment Method */}
-          <PaymentMethod />
+          <PaymentMethod 
+            onStripeClientSecret={setStripeClientSecret}
+            onStripeElementReady={setStripePaymentReady}
+          />
 
-          {/* Credit Card Fields - Always visible under payment gateway */}
-          <CreditCardFields />
+          {/* Credit Card Fields - Stripe Elements or manual fields */}
+          <CreditCardFields 
+            stripeClientSecret={stripeClientSecret}
+            onStripeElementReady={setStripeElements}
+            onStripePaymentReady={setStripePaymentReady}
+          />
 
           {/* Billing Address Checkbox */}
           <BillingAddressCheckbox />
@@ -165,7 +207,7 @@ const Billing = ({ handleFormSubmit }: IBillingProps) => {
           <BillingAddressFields />
 
           {/* Order Button */}
-          <OrderButton />
+          <OrderButton isProcessingStripe={isProcessingStripe} />
         </form>
       </FormProvider>
     </section>

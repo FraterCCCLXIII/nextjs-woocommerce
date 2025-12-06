@@ -115,6 +115,73 @@ export const CHECKOUT_MUTATION = gql`
     checkout(input: $input) {
       result
       redirect
+      order {
+        id
+        databaseId
+        orderNumber
+        orderKey
+        status
+        date
+        total
+        subtotal
+        totalTax
+        shippingTotal
+        paymentMethod
+        paymentMethodTitle
+        currency
+        billing {
+          firstName
+          lastName
+          address1
+          address2
+          city
+          state
+          postcode
+          country
+          email
+          phone
+          company
+        }
+        shipping {
+          firstName
+          lastName
+          address1
+          address2
+          city
+          state
+          postcode
+          country
+        }
+        lineItems {
+          nodes {
+            id
+            productId
+            quantity
+            subtotal
+            total
+            product {
+              node {
+                id
+                name
+                image {
+                  sourceUrl
+                  altText
+                }
+              }
+            }
+            variation {
+              node {
+                id
+                name
+                image {
+                  sourceUrl
+                  altText
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 `;

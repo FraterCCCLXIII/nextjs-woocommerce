@@ -323,6 +323,9 @@ export const GET_CURRENT_USER = gql`
       lastName
       email
       username
+      avatar {
+        url
+      }
       billing {
         firstName
         lastName
@@ -470,6 +473,18 @@ export const GET_AVAILABLE_PAYMENT_GATEWAYS = gql`
         description
         enabled
       }
+    }
+  }
+`;
+
+export const GET_STRIPE_PAYMENT_INTENT = gql`
+  query GetStripePaymentIntent($stripePaymentMethod: StripePaymentMethodEnum!) {
+    stripePaymentIntent(stripePaymentMethod: $stripePaymentMethod) {
+      amount
+      clientSecret
+      error
+      id
+      currency
     }
   }
 `;

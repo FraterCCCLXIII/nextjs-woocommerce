@@ -1,7 +1,8 @@
 /*eslint complexity: ["error", 20]*/
 // Imports
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, ApolloError } from '@apollo/client';
+import { loadStripe, Stripe, StripeElements } from '@stripe/stripe-js';
 
 // Components
 import Billing from './Billing.component';
@@ -131,6 +132,22 @@ const CheckoutForm = () => {
   const [requestError, setRequestError] = useState<ApolloError | null>(null);
   const [orderCompleted, setorderCompleted] = useState<boolean>(false);
   const [completedOrder, setCompletedOrder] = useState<OrderResponse['checkout']['order'] | null>(null);
+  
+  // Stripe payment processing state
+  const [stripeClientSecret, setStripeClientSecret] = useState<string>('');
+  const [stripeElements, setStripeElements] = useState<StripeElements | null>(null);
+  const [stripePaymentReady, setStripePaymentReady] = useState<boolean>(false);
+  const [isProcessingStripe, setIsProcessingStripe] = useState<boolean>(false);
+  const stripeRef = useRef<Stripe | null>(null);
+  
+  // Initialize Stripe
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+      loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).then((stripe) => {
+        stripeRef.current = stripe;
+      });
+    }
+  }, []);
 
   // Get cart data query
   const { data, refetch, error: cartError } = useQuery(GET_CART, {
@@ -209,7 +226,7 @@ const CheckoutForm = () => {
     refetch();
   }, [refetch]);
 
-  const handleFormSubmit = (submitData: ICheckoutDataProps) => {
+  const handleFormSubmit = async (submitData: ICheckoutDataProps) => {
     // Ensure all required fields have defaults
     const formData: ICheckoutDataProps = {
       ...submitData,
@@ -220,8 +237,86 @@ const CheckoutForm = () => {
       paymentMethod: submitData.paymentMethod || 'bacs',
     };
     
-    const checkOutData = createCheckoutData(formData);
+    const stripeGatewayId = process.env.NEXT_PUBLIC_STRIPE_GATEWAY_ID || 'stripe';
+    const isStripe = formData.paymentMethod === stripeGatewayId || 
+                     formData.paymentMethod === 'stripe' || 
+                     formData.paymentMethod === 'stripe_cc' ||
+                     formData.paymentMethod === 'woocommerce_gateway_stripe' ||
+                     formData.paymentMethod?.startsWith('stripe');
+    
+    // Process Stripe payment if Stripe is selected
+    if (isStripe && stripeRef.current && stripeElements && stripeClientSecret) {
+      setIsProcessingStripe(true);
+      try {
+        // Submit the elements to validate the form
+        const { error: submitError } = await stripeElements.submit();
+        if (submitError) {
+          console.error('Stripe form validation failed:', submitError);
+          setRequestError(new Error(submitError.message) as ApolloError);
+          setIsProcessingStripe(false);
+          return;
+        }
 
+        // Confirm payment with Stripe
+        const { error, paymentIntent } = await stripeRef.current.confirmPayment({
+          elements: stripeElements,
+          clientSecret: stripeClientSecret,
+          confirmParams: {
+            return_url: `${window.location.origin}/checkout/order-received`,
+            payment_method_data: {
+              billing_details: {
+                name: `${formData.firstName || ''} ${formData.lastName || ''}`.trim() || undefined,
+                email: formData.email || undefined,
+                phone: formData.phone || undefined,
+                address: {
+                  line1: formData.address1 || undefined,
+                  line2: formData.address2 || undefined,
+                  city: formData.city || undefined,
+                  state: formData.state || undefined,
+                  postal_code: formData.postcode || undefined,
+                  country: formData.country || undefined,
+                },
+              },
+            },
+          },
+          redirect: 'if_required',
+        });
+
+        if (error) {
+          console.error('Stripe payment failed:', error);
+          setRequestError(new Error(error.message) as ApolloError);
+          setIsProcessingStripe(false);
+          return;
+        }
+
+        if (paymentIntent) {
+          // Add Stripe metadata to checkout data
+          const stripeMetaData = [
+            { key: '_stripe_payment_intent_id', value: paymentIntent.id },
+            { key: '_stripe_payment_method_id', value: paymentIntent.payment_method as string || '' },
+            { key: '_stripe_source_id', value: paymentIntent.id },
+            { key: '_stripe_fee', value: '0' },
+            { key: '_stripe_net', value: paymentIntent.amount.toString() },
+            { key: '_stripe_currency', value: paymentIntent.currency },
+            { key: '_stripe_charge_captured', value: 'yes' },
+            { key: '_wc_stripe_payment_method_type', value: 'card' },
+          ];
+
+          formData.metaData = stripeMetaData;
+          formData.isPaid = paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing';
+          formData.transactionId = paymentIntent.id;
+        }
+      } catch (error: any) {
+        console.error('Stripe payment error:', error);
+        setRequestError(new Error(error.message || 'Payment processing failed') as ApolloError);
+        setIsProcessingStripe(false);
+        return;
+      } finally {
+        setIsProcessingStripe(false);
+      }
+    }
+    
+    const checkOutData = createCheckoutData(formData);
     setOrderData(checkOutData);
     setRequestError(null);
   };
@@ -259,7 +354,13 @@ const CheckoutForm = () => {
                 )}
                 
                 {/* Payment Details Form */}
-                <Billing handleFormSubmit={handleFormSubmit} />
+                <Billing 
+                  handleFormSubmit={handleFormSubmit}
+                  onStripeClientSecret={setStripeClientSecret}
+                  onStripeElements={setStripeElements}
+                  onStripePaymentReady={setStripePaymentReady}
+                  isProcessingStripe={isProcessingStripe}
+                />
               </div>
             </div>
 

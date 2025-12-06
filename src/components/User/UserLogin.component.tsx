@@ -29,7 +29,17 @@ const UserLogin = () => {
     try {
       const result = await login(data.username, data.password);
       if (result.success && result.status === 'SUCCESS') {
-        router.push('/account');
+        // Check for return URL
+        const returnUrl = typeof window !== 'undefined' ? sessionStorage.getItem('loginReturnUrl') : null;
+        if (returnUrl && returnUrl !== '/login' && returnUrl !== '/account') {
+          // Clear return URL and redirect
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('loginReturnUrl');
+          }
+          router.push(returnUrl);
+        } else {
+          router.push('/account');
+        }
       } else {
         throw new Error('Failed to login');
       }

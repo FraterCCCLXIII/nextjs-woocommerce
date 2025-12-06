@@ -1,32 +1,67 @@
 "use client";
 
 import { useFormContext } from 'react-hook-form';
+import StripeElement from './StripeElement.component';
+import { useCartStore } from '@/stores/cartStore';
+
+interface CreditCardFieldsProps {
+  stripeClientSecret?: string;
+  onStripeElementReady?: (elements: any) => void;
+  onStripePaymentReady?: (ready: boolean) => void;
+}
 
 /**
  * Credit card fields component for checkout
- * Compact layout with card number, expiration, and CVC
- * Always visible under payment gateway section
+ * Uses Stripe Elements for Stripe payments, manual fields for other gateways
  */
-const CreditCardFields = () => {
+const CreditCardFields = ({ stripeClientSecret, onStripeElementReady, onStripePaymentReady }: CreditCardFieldsProps = {}) => {
   const { register, formState: { errors }, watch } = useFormContext();
+  const { cart } = useCartStore();
   const paymentMethod = watch('paymentMethod');
   
   // Show credit card fields for Stripe or Ecrypt payment methods
   // Stripe can have different gateway IDs: 'stripe', 'woocommerce_gateway_stripe', 'stripe_cc', etc.
   // Default to 'stripe' based on webhook URL format (wc-api=wc_stripe)
   const stripeGatewayId = process.env.NEXT_PUBLIC_STRIPE_GATEWAY_ID || 'stripe';
-  const showCardFields = 
+  const isStripe = 
     paymentMethod === stripeGatewayId ||
     paymentMethod === 'stripe' || 
     paymentMethod === 'woocommerce_gateway_stripe' ||
     paymentMethod === 'stripe_cc' ||
-    paymentMethod?.startsWith('stripe') ||
-    paymentMethod === 'ecrypt_payment_gateway';
+    paymentMethod?.startsWith('stripe');
+  
+  const isEcrypt = paymentMethod === 'ecrypt_payment_gateway';
+  const showCardFields = isStripe || isEcrypt;
 
   // Don't render if payment method doesn't require card fields
   if (!showCardFields) {
     return null;
   }
+  
+  // Use Stripe Elements for Stripe payments
+  if (isStripe && stripeClientSecret && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+    const cartTotal = cart?.total ? parseFloat(cart.total.replace(/[^0-9.]/g, '')) * 100 : 0;
+    const currency = 'usd'; // TODO: Get from cart or config
+    
+    return (
+      <div className="mb-6">
+        <div className="text-sm text-gray-600 mb-3">Card information</div>
+        <StripeElement
+          clientSecret={stripeClientSecret}
+          amount={cartTotal}
+          currency={currency}
+          onElementReady={(elements) => {
+            if (onStripeElementReady) onStripeElementReady(elements);
+          }}
+          onPaymentReady={(ready) => {
+            if (onStripePaymentReady) onStripePaymentReady(ready);
+          }}
+        />
+      </div>
+    );
+  }
+  
+  // Fallback to manual card fields for Ecrypt or if Stripe Elements not available
 
   return (
     <div className="mb-6">

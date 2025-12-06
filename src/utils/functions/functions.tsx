@@ -100,6 +100,9 @@ export interface ICheckoutDataProps {
   phone: string;
   company: string;
   paymentMethod: string;
+  metaData?: Array<{ key: string; value: string }>;
+  isPaid?: boolean;
+  transactionId?: string;
 }
 
 /**
@@ -246,8 +249,9 @@ export const createCheckoutData = (order: ICheckoutDataProps) => ({
   },
   shipToDifferentAddress: false,
   paymentMethod: order.paymentMethod,
-  isPaid: false,
-  transactionId: 'fhggdfjgfi',
+  metaData: order.metaData || [],
+  isPaid: order.isPaid || false,
+  transactionId: order.transactionId || '',
 });
 
 /**

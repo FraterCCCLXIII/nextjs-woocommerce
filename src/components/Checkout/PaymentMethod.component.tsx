@@ -3,8 +3,9 @@
 import { useFormContext } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
-import { GET_AVAILABLE_PAYMENT_GATEWAYS } from '@/utils/gql/GQL_QUERIES';
+import { GET_AVAILABLE_PAYMENT_GATEWAYS, GET_STRIPE_PAYMENT_INTENT } from '@/utils/gql/GQL_QUERIES';
 import LoadingSpinner from '../LoadingSpinner/LoadingSpinner.component';
+import { useCartStore } from '@/stores/cartStore';
 
 interface PaymentGateway {
   id: string;
@@ -20,12 +21,21 @@ interface PaymentGateway {
  * Stripe gateway ID can be configured via NEXT_PUBLIC_STRIPE_GATEWAY_ID environment variable
  * Common values: 'stripe' (most common, matches webhook URL wc-api=wc_stripe), 'stripe_cc', 'woocommerce_gateway_stripe'
  */
-const PaymentMethod = () => {
+interface PaymentMethodProps {
+  onStripeElementReady?: (ready: boolean) => void;
+  onStripeClientSecret?: (secret: string) => void;
+}
+
+const PaymentMethod = ({ onStripeElementReady, onStripeClientSecret }: PaymentMethodProps = {}) => {
   const { register, watch, setValue } = useFormContext();
+  const { cart } = useCartStore();
   
   // Get Stripe gateway ID from environment or use common defaults
   // Based on webhook URL format (wc-api=wc_stripe), the gateway ID is typically 'stripe'
   const stripeGatewayId = process.env.NEXT_PUBLIC_STRIPE_GATEWAY_ID || 'stripe';
+  
+  // Calculate cart total for Stripe payment intent
+  const cartTotal = cart?.total ? parseFloat(cart.total.replace(/[^0-9.]/g, '')) * 100 : 0; // Convert to cents
   
   // Fetch available payment gateways from WooCommerce
   const { data, loading, error } = useQuery<{ paymentGateways: { nodes: PaymentGateway[] } }>(
@@ -78,6 +88,32 @@ const PaymentMethod = () => {
 
   // Watch payment method to sync with form state
   const paymentMethod = watch('paymentMethod');
+  
+  // Fetch Stripe payment intent when Stripe is selected
+  const isStripeSelected = selectedMethod === stripeGatewayId || 
+                          selectedMethod === 'stripe' || 
+                          selectedMethod === 'stripe_cc' ||
+                          selectedMethod === 'woocommerce_gateway_stripe' ||
+                          selectedMethod?.startsWith('stripe');
+  
+  const { data: stripeData, loading: stripeLoading } = useQuery(
+    GET_STRIPE_PAYMENT_INTENT,
+    {
+      variables: {
+        stripePaymentMethod: 'PAYMENT', // Use PAYMENT for modern Payment Element
+      },
+      skip: !isStripeSelected || cartTotal === 0, // Skip if Stripe not selected or cart is empty
+      errorPolicy: 'all',
+      fetchPolicy: 'network-only',
+    }
+  );
+  
+  // Pass Stripe client secret to parent when available
+  useEffect(() => {
+    if (stripeData?.stripePaymentIntent?.clientSecret && onStripeClientSecret) {
+      onStripeClientSecret(stripeData.stripePaymentIntent.clientSecret);
+    }
+  }, [stripeData, onStripeClientSecret]);
 
   // Sync selectedMethod with form state on mount and when gateways load
   useEffect(() => {
@@ -228,11 +264,14 @@ const PaymentMethod = () => {
             <div className="flex-1">
               <div className="font-medium text-gray-900 flex items-center gap-2">
                 Credit / Debit Card
-                <svg className="w-6 h-4" viewBox="0 0 24 16" fill="none">
-                  <rect width="24" height="16" rx="2" fill="#635BFF"/>
-                  <path d="M9.5 8L7 5.5L4.5 8L7 10.5L9.5 8Z" fill="white"/>
-                  <path d="M14.5 8L17 5.5L19.5 8L17 10.5L14.5 8Z" fill="white"/>
-                </svg>
+                <div className="flex items-center gap-1">
+                  <svg className="w-6 h-4" viewBox="0 0 24 16" fill="none">
+                    <rect width="24" height="16" rx="2" fill="#635BFF"/>
+                    <path d="M9.5 8L7 5.5L4.5 8L7 10.5L9.5 8Z" fill="white"/>
+                    <path d="M14.5 8L17 5.5L19.5 8L17 10.5L14.5 8Z" fill="white"/>
+                  </svg>
+                  <span className="text-xs text-gray-400">Stripe</span>
+                </div>
               </div>
               <div className="text-xs text-gray-500">Pay securely with Stripe</div>
             </div>
